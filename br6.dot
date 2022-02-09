@@ -12,6 +12,7 @@ digraph G {
     q6 [label="Grid CB" shape="circle"]
     q7 [label="full load" shape="circle"]
     q8 [label="Tripped" shape="circle"]
+    q10 [label="Warned" shape="circle"]
     q9 [label="Engine not ready" shape="circle"]
 
  
@@ -37,5 +38,12 @@ digraph G {
     q5 -> q8 [label="Error"]
     q6 -> q8 [label="Error"]
     q7 -> q8 [label="Error"]
+    q1 -> q10 [label="Warning"]
+    q2 -> q10 [label="Warning"]
+    q3 -> q10 [label="Warning"]
+    q4 -> q10 [label="Warning"]
+    q5 -> q10 [label="Warning"]
+    q6 -> q10 [label="Warning"]
+    q7 -> q10 [label="Warning"]
     q9 -> q1 [label="Quit Error"]
 }
