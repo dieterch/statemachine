@@ -1,3 +1,4 @@
+import pandas as pd
 class regexFSM:
     def __init__(self):
 
@@ -88,6 +89,15 @@ class msgFSM:
         self.start = self._create_start()
         self.start.send(None) # Advance to first yield
         
+        self.mode_off = self._create_mode_off()
+        self.mode_off.send(None) # Advance to first yield
+        
+        self.mode_manual = self._create_mode_manual()
+        self.mode_manual.send(None) # Advance to first yield
+        
+        self.mode_automatic = self._create_mode_automatic()
+        self.mode_automatic.send(None) # Advance to first yield
+
         self.startprep = self._create_startprep()
         self.startprep.send(None) # Advance to first yield
 
@@ -114,33 +124,185 @@ class msgFSM:
     def _create_start(self):
         while True:
             msg = yield
-            msgname = msg['name']
-            if msgname in ['1259']:
-                #print(f"{msg['message']}@{msg['datetime']} Start -> Startvorbereitung")
-                self._result = {}
-                self._result['t0'] = [msg['timestamp'], msg['message']]
-                self._summary.append(self._result)
-                # switch to state Startvorbereitung 
-                self.current_state = self.startprep
-            else:
-                pass #do nothing ?
+            self._result = {
+                'warnings':[],
+                'alarms':[],
+                'operations':[]
+            }
+            if msg['severity'] == 600:
+                if msg['name'] == '1254':
+                    lr = {
+                        'mode':'FSM-start',
+                        'start':{
+                            'ts':pd.Timestamp(int(msg['timestamp'])*1e6),
+                            'msg':msg['message']
+                        }
+                    }
+                    self._result.update(lr)
+                    self._summary.append(self._result)
+                    self.current_state = self.mode_off
+                self._result['operations'].append(msg)
+            elif msg['severity'] == 700:
+                self._result['warnings'].append(msg)
+            elif msg['severity'] == 800:
+                self._result['alarms'].append(msg)
     
+    def _create_mode_off(self):
+        while True:
+            msg = yield
+            self._result = {
+                'warnings':[],
+                'alarms':[],
+                'operations':[]
+            }
+            if msg['severity'] == 600:
+                if msg['name'] == '1226':
+                    lr = {
+                        'mode':'mode-manual',
+                        'start':{
+                            'ts':pd.Timestamp(int(msg['timestamp'])*1e6),
+                            'msg':msg['message']
+                        }
+                    }
+                    self._result.update(lr)
+                    self._summary.append(self._result)
+                    # switch to state Startvorbereitung 
+                    self.current_state = self.mode_manual
+                elif msg['name'] == '1227':
+                    lr = {
+                        'mode':'mode-automatic',
+                        'start':{
+                            'ts':pd.Timestamp(int(msg['timestamp'])*1e6),
+                            'msg':msg['message']
+                        }
+                    }
+                    self._result.update(lr)
+                    self._summary.append(self._result)
+                    self.current_state = self.mode_automatic                    
+                self._result['operations'].append(msg)
+            elif msg['severity'] == 700:
+                self._result['warnings'].append(msg)
+            elif msg['severity'] == 800:
+                self._result['alarms'].append(msg)
+
+    def _create_mode_manual(self):
+        while True:
+            msg = yield
+            self._result = {
+                'warnings':[],
+                'alarms':[],
+                'operations':[]
+            }
+            if msg['severity'] == 600:
+                if msg['name'] == '1259':
+                    lr = {
+                        'mode':'start-preparation',
+                        'start':{
+                            'ts':pd.Timestamp(int(msg['timestamp'])*1e6),
+                            'msg':msg['message']
+                        }
+                    }
+                    self._result.update(lr)
+                    self._summary.append(self._result)
+                    self.current_state = self.startprep
+                elif msg['name'] == '1225':
+                    lr = {
+                        'mode':'mode-off',
+                        'start':{
+                            'ts':pd.Timestamp(int(msg['timestamp'])*1e6),
+                            'msg':msg['message']
+                        }
+                    }
+                    self._result.update(lr)
+                    self._summary.append(self._result)
+                    self.current_state = self.startprep
+                    self._summary.append(self._result)
+                    self.current_state = self.mode_off
+                elif msg['name'] == '1227':
+                    lr = {
+                        'mode':'mode-automatic',
+                        'start':{
+                            'ts':pd.Timestamp(int(msg['timestamp'])*1e6),
+                            'msg':msg['message']
+                        }
+                    }
+                    self._result.update(lr)
+                    self._summary.append(self._result)
+                    self.current_state = self.mode_automatic
+                self._result['operations'].append(msg)
+            elif msg['severity'] == 700:
+                self._result['warnings'].append(msg)
+            elif msg['severity'] == 800:
+                self._result['alarms'].append(msg)
+
+    def _create_mode_automatic(self):
+        while True:
+            msg = yield
+            self._result = {
+                'warnings':[],
+                'alarms':[],
+                'operations':[]
+            }
+            if msg['severity'] == 600:
+                if msg['name'] == '1259':
+                    lr = {
+                        'mode':'start-preparation',
+                        'start':{
+                            'ts':pd.Timestamp(int(msg['timestamp'])*1e6),
+                            'msg':msg['message']
+                        }
+                    }
+                    self._result.update(lr)
+                    self._summary.append(self._result)
+                    self.current_state = self.startprep
+                elif msg['name'] == '1225':
+                    lr = {
+                        'mode':'mode-off',
+                        'start':{
+                            'ts':pd.Timestamp(int(msg['timestamp'])*1e6),
+                            'msg':msg['message']
+                        }
+                    }
+                    self._result.update(lr)
+                    self._summary.append(self._result)
+                    self.current_state = self.startprep
+                    self._summary.append(self._result)
+                    self.current_state = self.mode_off
+                elif msg['name'] == '1226':
+                    lr = {
+                        'mode':'mode-manual',
+                        'start':{
+                            'ts':pd.Timestamp(int(msg['timestamp'])*1e6),
+                            'msg':msg['message']
+                        }
+                    }
+                    self._result.update(lr)
+                    self._summary.append(self._result)
+                    self.current_state = self.mode_manual
+                self._result['operations'].append(msg)
+            elif msg['severity'] == 700:
+                self._result['warnings'].append(msg)
+            elif msg['severity'] == 800:
+                self._result['alarms'].append(msg)
+
     def _create_startprep(self):
         while True:
             msg = yield
-            msgname = msg['name']
-            if msgname in ['1260']:
-                #print(f"{msg['message']}@{msg['datetime']} Startvorbereitung -> Ende")
-                self._result['t1'] = [msg['timestamp'], msg['message']]
-                self.current_state = self.stop
-            else:
-                pass #do nothing ?
+            if msg['severity'] == 600:
+                if msg['name'] == '1260':
+                    self._result['end'] = {
+                        'ts':pd.Timestamp(int(msg['timestamp'])*1e6),
+                        'msg':msg['message']
+                    }
+                    self.current_state = self.stop
+                self._result['operations'].append(msg)
+            elif msg['severity'] == 700:
+                self._result['warnings'].append(msg)
+            elif msg['severity'] == 800:
+                self._result['alarms'].append(msg)
 
     def _create_stop(self):
         while True:
             msg = yield
-            msgname = msg['name']
-            #print(f"last msg: {msg['message']}@{msg['datetime']} Stop")
-            #print(F"here i could calculate ...")
-            self._result['t0->t1'] = (float(self._result['t1'][0]) - float(self._result['t0'][0])) / 1000.0 # myplant => ms
+            self._result['Δt'] = self._result['end']['ts'] - self._result['start']['ts'] # myplant => ms
             self.current_state = self.start
