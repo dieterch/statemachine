@@ -1,5 +1,5 @@
+import warnings
 import pandas as pd
-
 
 def prime(fn): # I guess this is needed to 'prime' the generator
     def wrapper(*args, **kwargs):
@@ -8,108 +8,9 @@ def prime(fn): # I guess this is needed to 'prime' the generator
         return v
     return wrapper
 
-class regexFSM:
-    def __init__(self):
+class engine:
+    pass
 
-        self.start = self._create_start()
-        self.q1 = self._create_q1()
-        self.q2 = self._create_q2()
-        self.q3 = self._create_q3()
-        self.current_state = self.start
-        self.stopped = False
-        
-    def send(self, char):
-        try:
-            self.current_state.send(char)
-        except StopIteration:
-            self.stopped = True
-        
-    def does_match(self):
-        if self.stopped:
-            return False
-        return self.current_state == self.q3
-
-    @prime
-    def _create_start(self):
-        while True:
-            char = yield
-            if char == 'a':
-                print('S  -> Q1')
-                self.current_state = self.q1
-            else:
-                print('Start, Break')
-                break
-    
-    @prime
-    def _create_q1(self):
-        while True:
-            char = yield
-            if char == 'b':
-                print('Q1 -> Q2')
-                self.current_state = self.q2
-            elif char == 'c':
-                print('Q1 -> Q3')
-                self.current_state = self.q3
-            else:
-                print('Q1, Break')
-                break
-
-    @prime
-    def _create_q2(self):
-        while True:
-            char = yield
-            if char == 'b':
-                print('Q2 -> Q2')
-                self.current_state = self.q2
-            elif char == 'c':
-                print('Q2 -> Q3')
-                self.current_state = self.q3
-            else:
-                print('Q2, Break')
-                break
-
-    @prime
-    def _create_q3(self):
-        while True:
-            char = yield
-            print('Q3, Completed')
-            break
-
-def grep_regex(text):
-    evaluator = regexFSM()
-    for ch in text:
-        evaluator.send(ch)
-    return evaluator.does_match()
-
-
-class msgFSM:
-    def __init__(self):
-
-        self._summary = []
-
-        # for each Finite State
-        # create a Coroutine
-        self.start = self._create_start()
-        self.mode_off = self._create_mode_off()
-        self.mode_manual = self._create_mode_manual()
-        self.mode_automatic = self._create_mode_automatic()
-        self.startprep = self._create_startprep()
-        self.current_state = self.start
-        self.stopped = False
-        
-    def send(self, msg):
-        try:
-            self.current_state.send(msg)
-        except StopIteration:
-            self.stopped = True
-        
-    def completed(self):
-        """Returns the collected statistical data
-
-        Returns:
-            list: List of results dicts
-        """
-        return self._summary
 
     def _action(self,msg,tsflist, res, sum=True):
         if msg['severity'] == 600:
@@ -130,81 +31,89 @@ class msgFSM:
             res['alarms'].append(msg)
         return res
 
-# inside the coroutines
-# create the Transfer Functions
-# use _action to simplify ...
 
-    @prime
-    def _create_start(self):
-        while True:
-            msg = yield
-            self._result = {'warnings':[], 'alarms':[],'operations':[]}
-            self._result = self._action( 
-                msg,  
-                [
-                    { 'key':'1254', 'mode':'FSM-start', 'fun':self.mode_off}
-                ], 
-                self._result, 
-            )
+class State:
+    def __init__(self, name, transferfun_list):
+        self._name = name
+        self._transf = transferfun_list
+        self._messages = []
     
-    @prime
-    def _create_mode_off(self):
-        while True:
-            msg = yield
-            self._result = {'warnings':[],'alarms':[],'operations':[]}
-            self._result = self._action( 
-                msg,  
-                [
-                    { 'key':'1226', 'mode':'mode-manual', 'fun':self.mode_manual},
-                    { 'key':'1227', 'mode':'mode-automatic', 'fun':self.mode_automatic},
-                ], 
-                self._result, 
-                sum = True
-            )
+    def send(self,msg):
+        self._messages.append(msg)
+        for transf in self._transf: # screen triggers
+            if msg['name'] == transf['trigger']:
+                return transf['state']
+        return self._name
 
-    @prime
-    def _create_mode_manual(self):
-        while True:
-            msg = yield
-            self._result = {'warnings':[], 'alarms':[], 'operations':[] }
-            self._result = self._action( 
-                msg,  
-                [
-                    { 'key':'1259', 'mode':'start-preparation', 'fun':self.startprep},
-                    { 'key':'1225', 'mode':'mode-off', 'fun':self.mode_off},
-                    { 'key':'1227', 'mode':'mode-automatic', 'fun':self.mode_automatic},
-                ], 
-                self._result, 
-            )
+class msgFSM:
+    def __init__(self):
+        self.states = {
+            'coldstart': State('coldstart',[
+                { 'trigger':'1254', 'state':'mode-off'}]),
+            'mode-off':  State('mode-off',[
+                { 'trigger':'1226', 'state': 'mode-manual'},
+                { 'trigger':'1227', 'state':'mode-automatic'}]),
+            'mode-manual': State('mode-manual',[
+                { 'trigger':'1265', 'state':'start-preparation'},
+                { 'trigger':'1225', 'state':'mode-off'},
+                { 'trigger':'1227', 'state':'mode-automatic'}]),
+            'mode-automatic': State('mode-automatic',[
+                { 'trigger':'1265', 'state':'start-preparation'},
+                { 'trigger':'1225', 'state':'mode-off'},
+                { 'trigger':'1226', 'state':'mode-manual'}]),
+            'start-preparation': State('start-preparation',[
+                { 'trigger':'1259', 'state':'coldstart'},
+                { 'trigger':'1249', 'state': 'starter'}]),
+            'starter': State('starter',[
+                { 'trigger':'3225', 'state':'hochlauf'}]),
+            'hochlauf': State('hochlauf',[
+                { 'trigger':'2124', 'state':'idle'}]),             
+            'idle': State('idle',[
+                { 'trigger':'1259', 'state':'coldstart'}])             
+        }
+        self.current_state = 'coldstart'
+        self.counter = 0
 
-    @prime
-    def _create_mode_automatic(self):
-        while True:
-            msg = yield
-            self._result = {'warnings':[],'alarms':[],'operations':[]}
-            self._result = self._action( 
-                msg,  
-                [
-                    { 'key':'1259', 'mode':'start-preparation', 'fun':self.startprep},
-                    { 'key':'1225', 'mode':'mode-off', 'fun':self.mode_off},
-                    { 'key':'1226', 'mode':'mode-manual', 'fun':self.mode_manual},
-                ], 
-                self._result, 
-            )
+    def send(self, msg):
+        try:
+            self.current_state = self.states[self.current_state].send(msg)
+            #print('|',self.counter, ' ', self.current_state,' ',msg['name'],msg['message'])
+            self.counter += 1
+        except Exception as err:
+            print(str(err))
+    
+    def completed(self):
 
-    @prime
-    def _create_startprep(self):
-        while True:
-            msg = yield
-            self._result = self._action( 
-                msg,  
-                [
-                    { 'key':'1225', 'mode':'mode-off', 'fun':self.mode_off},                ], 
-                self._result, 
-            )
+        def filter_messages(messages, severity):
+            fmessages = [msg for msg in messages if msg['severity'] == severity]
+            unique_messages = set([msg['name'] for msg in fmessages])
+            res_messages = [{ 'anz': len([msg for msg in fmessages if msg['name'] == m]), 
+                              'msg':f"{m} {[msg['message'] for msg in fmessages if msg['name'] == m][0]}"
+                            } for m in unique_messages]
+            return len(fmessages), sorted(res_messages, key=lambda x:x['anz'], reverse=True) 
+
+        for state in self.states:
+
+            alarms, alu = filter_messages(self.states[state]._messages, 800)
+            al = "".join([f"{line['anz']:3d} {line['msg']}\n" for line in alu[:10]])
+
+            warnings, wru = filter_messages(self.states[state]._messages, 700)
+            wn = "".join([f"{line['anz']:3d} {line['msg']}\n" for line in wru[:10]])
+
+            print(
+f"""{state}:
+ Messages: {len(self.states[state]._messages)} 
+ Alarms   total:{alarms:3d} unique:{len(alu):3d}
+ top ten:
+{al}
+ Warnings total:{warnings:3d} unique{len(wru):3d}
+ top ten:
+{wn}
+
+""")
+        return print('completed')
 
 def Start_FSM(msgs):
     fsmrunner = msgFSM()
     for index,msg in msgs.iterrows():
         fsmrunner.send(msg)
-    return fsmrunner.completed()

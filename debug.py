@@ -11,6 +11,6 @@ def Start_FSM(msgs):
 
 messages = pd.read_pickle('1184199_messages.pkl').reset_index()
 m = messages[messages.name != '9007'] # filter out hourly messages
-m = m[:2000]
+m = m[:]
 Start_FSM(m)
 
