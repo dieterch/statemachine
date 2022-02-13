@@ -1,3 +1,4 @@
+from re import T
 import warnings
 import pandas as pd
 class State:
@@ -5,6 +6,7 @@ class State:
         self._name = name
         self._transf = transferfun_list
         self._messages = []
+        self._duration = pd.Timedelta(0)
     
     def send(self,msg):
         self._messages.append(msg)
@@ -13,8 +15,14 @@ class State:
                 return transf['new-state']
         return self._name
 
+    def add_duration(self, dt):
+        self._duration += dt
+
+    def get_duration(self):
+        return self._duration
 class msgFSM:
-    def __init__(self):
+    def __init__(self, dauer):
+        self.dauer = dauer
         self.states = {
             'coldstart': State('coldstart',[
                 { 'trigger':'1225 Service selector switch Off', 'new-state':'mode-off'}
@@ -27,7 +35,7 @@ class msgFSM:
             'mode-manual': State('mode-manual',[
                 { 'trigger':'1227 Service selector switch Automatic', 'new-state':'mode-automatic'},
                 { 'trigger':'1265 Demand gas leakage check gas train 1', 'new-state':'start-preparation'},
-                { 'trigger':'1267 Demand gas leakage check gas train 2', 'new-state':'start-preparation'},
+                #{ 'trigger':'1267 Demand gas leakage check gas train 2', 'new-state':'start-preparation'},
                 { 'trigger':'1225 Service selector switch Off', 'new-state':'mode-off'},
                 { 'trigger':'1232 Request module off', 'new-state':'mode-off'},
                 { 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
@@ -78,9 +86,11 @@ class msgFSM:
         }
         self.current_state = 'coldstart'
         self.startversuch = 0
+        self.successfulstart = 0
         self.timing = 'off'
+        self.st_timer = pd.Timedelta(0)
         self.last_ts = None
-        self.cutlist = 10
+        self.cutlist = 100
 
     def send(self, msg):
         try:
@@ -89,14 +99,22 @@ class msgFSM:
             if self.current_state != actstate:
                 switch_ts = pd.to_datetime(int(msg['timestamp'])*1e6)
                 tt = switch_ts.strftime('%d.%m.%Y %H:%M:%S')
-                d_ts = pd.Timedelta(switch_ts - self.last_ts).round('S') if self.last_ts else pd.Timedelta(0).round('S')
+                d_ts = pd.Timedelta(switch_ts - self.last_ts) if self.last_ts else pd.Timedelta(0)
+                self.states[actstate].add_duration(d_ts)
                 self.last_ts = switch_ts
                 if self.current_state == 'start-preparation':
                     self.startversuch += 1
                     self.timing = 'on'
+                    self.st_timer = pd.Timedelta(0)
                 if self.current_state == 'mode-off':
                     self.timing = 'off'
-                print(f"{tt} Δ[{str(d_ts)}] {msg['name']} {msg['message']:<40} {self.startversuch:>3d} {self.timing:>3} {actstate:<20} => {self.current_state:<20}")
+                    self.st_timer = pd.Timedelta(0)
+                if self.current_state == 'net-parallel':
+                    if self.timing:
+                        self.successfulstart += 1
+                if self.timing == 'on':
+                    self.st_timer = self.st_timer + d_ts
+                print(f"{tt} {actstate:<18} {d_ts.seconds:6d}s {self.st_timer.seconds:3d}s {msg['name']} {msg['message']:<40} {self.startversuch:>3d} {self.successfulstart:>3d} {self.timing:>3} => {self.current_state:<20}")
         except Exception as err:
             print(str(err))
     
@@ -110,11 +128,13 @@ class msgFSM:
                             } for m in unique_messages]
             return len(fmessages), sorted(res_messages, key=lambda x:x['anz'], reverse=True) 
         
-        print('''
+        print(f'''
 
 *****************************************
 * Ergebnisse (c)2022 Dieter Chvatal     *
 *****************************************
+gesamter Zeitraum: {self.dauer.round('S')}
+
 ''')
         for state in self.states:
 
@@ -125,19 +145,28 @@ class msgFSM:
             wn = "".join([f"{line['anz']:3d} {line['msg']}\n" for line in wru[:self.cutlist]])
 
             print(
-f"""{state}:
- Messages: {len(self.states[state]._messages)} 
- Alarms   total:{alarms:3d} unique:{len(alu):3d}
- top ten:
-{al}
- Warnings total:{warnings:3d} unique{len(wru):3d}
- top ten:
-{wn}
+f"""
+{state}:
+Dauer       : {str(self.states[state].get_duration().round('S')):>20}  
+Anteil      : {self.states[state].get_duration()/self.dauer*100.0:20.2f}%
+Messages    : {len(self.states[state]._messages):20} 
+Alarms total: {alarms:20d}
+      unique: {len(alu):20d}
 
+{al}
+
+Warnings total: {warnings:20d}
+        unique: {len(wru):20d}
+
+{wn}
 """)
-        return print('completed')
+        print('completed')
 
 def Start_FSM(msgs):
-    fsmrunner = msgFSM()
+    tstart = pd.Timestamp(msgs.iloc[0]['timestamp']*1e6)
+    tend = pd.Timestamp(msgs.iloc[-1]['timestamp']*1e6)
+    tdelta = pd.Timedelta(tend-tstart).round('S')
+    fsmrunner = msgFSM(tdelta)
     for index,msg in msgs.iterrows():
         fsmrunner.send(msg)
+    fsmrunner.completed()
