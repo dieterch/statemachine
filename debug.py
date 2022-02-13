@@ -9,8 +9,16 @@ def Start_FSM(msgs):
         fsmrunner.send(msg)
     return fsmrunner.completed()
 
+
+print('''
+\033[H\033[J
+**************************************
+* FSM(c)2022 Dieter Chvatal          *
+**************************************
+''')
+
 messages = pd.read_pickle('1184199_messages.pkl').reset_index()
 m = messages[messages.name != '9007'] # filter out hourly messages
-m = m[:]
+m = m[:3000]
 Start_FSM(m)
 

@@ -1,37 +1,5 @@
 import warnings
 import pandas as pd
-
-def prime(fn): # I guess this is needed to 'prime' the generator
-    def wrapper(*args, **kwargs):
-        v = fn(*args, **kwargs)
-        v.send(None)
-        return v
-    return wrapper
-
-class engine:
-    pass
-
-
-    def _action(self,msg,tsflist, res, sum=True):
-        if msg['severity'] == 600:
-            for tsf in tsflist:
-                if msg['name'] == tsf['key']:
-                    lr = {
-                        'mode':tsf['mode'],
-                        'msg': msg
-                    }
-                    res.update(lr)
-                    if sum:
-                        self._summary.append(res)
-                    self.current_state = tsf['fun']
-            res['operations'].append(msg)
-        elif msg['severity'] == 700:
-            res['warnings'].append(msg)
-        elif msg['severity'] == 800:
-            res['alarms'].append(msg)
-        return res
-
-
 class State:
     def __init__(self, name, transferfun_list):
         self._name = name
@@ -41,44 +9,94 @@ class State:
     def send(self,msg):
         self._messages.append(msg)
         for transf in self._transf: # screen triggers
-            if msg['name'] == transf['trigger']:
-                return transf['state']
+            if msg['name'] == transf['trigger'][:4]:
+                return transf['new-state']
         return self._name
 
 class msgFSM:
     def __init__(self):
         self.states = {
             'coldstart': State('coldstart',[
-                { 'trigger':'1254', 'state':'mode-off'}]),
+                { 'trigger':'1225 Service selector switch Off', 'new-state':'mode-off'}
+                ]),
             'mode-off':  State('mode-off',[
-                { 'trigger':'1226', 'state': 'mode-manual'},
-                { 'trigger':'1227', 'state':'mode-automatic'}]),
+                { 'trigger':'1226 Service selector switch Manual', 'new-state': 'mode-manual'},
+                { 'trigger':'1227 Service selector switch Automatic', 'new-state':'mode-automatic'},
+                { 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
+                ]),
             'mode-manual': State('mode-manual',[
-                { 'trigger':'1265', 'state':'start-preparation'},
-                { 'trigger':'1225', 'state':'mode-off'},
-                { 'trigger':'1227', 'state':'mode-automatic'}]),
+                { 'trigger':'1227 Service selector switch Automatic', 'new-state':'mode-automatic'},
+                { 'trigger':'1265 Demand gas leakage check gas train 1', 'new-state':'start-preparation'},
+                { 'trigger':'1267 Demand gas leakage check gas train 2', 'new-state':'start-preparation'},
+                { 'trigger':'1225 Service selector switch Off', 'new-state':'mode-off'},
+                { 'trigger':'1232 Request module off', 'new-state':'mode-off'},
+                { 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
+                ]),
             'mode-automatic': State('mode-automatic',[
-                { 'trigger':'1265', 'state':'start-preparation'},
-                { 'trigger':'1225', 'state':'mode-off'},
-                { 'trigger':'1226', 'state':'mode-manual'}]),
+                { 'trigger':'1265 Demand gas leakage check gas train 1', 'new-state':'start-preparation'},
+                { 'trigger':'1226 Service selector switch Manual', 'new-state':'mode-manual'},
+                { 'trigger':'1225 Service selector switch Off', 'new-state':'mode-off'},
+                { 'trigger':'1232 Request module off', 'new-state':'mode-off'},
+                { 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
+                ]),
             'start-preparation': State('start-preparation',[
-                { 'trigger':'1259', 'state':'coldstart'},
-                { 'trigger':'1249', 'state': 'starter'}]),
+                { 'trigger':'1249 Starter on', 'new-state': 'starter'},
+                { 'trigger':'1225 Service selector switch Off', 'new-state':'mode-off'},
+                { 'trigger':'1232 Request module off', 'new-state': 'mode-off'},
+                { 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
+                ]),
             'starter': State('starter',[
-                { 'trigger':'3225', 'state':'hochlauf'}]),
+                { 'trigger':'3225 Ignition on', 'new-state':'hochlauf'},
+                { 'trigger':'1225 Service selector switch Off', 'new-state':'mode-off'},
+                { 'trigger':'1232 Request module off', 'new-state':'mode-off'},
+                { 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
+                ]),
             'hochlauf': State('hochlauf',[
-                { 'trigger':'2124', 'state':'idle'}]),             
+                { 'trigger':'2124 Idle', 'new-state':'idle'},
+                { 'trigger':'1225 Service selector switch Off', 'new-state':'mode-off'},
+                { 'trigger':'1232 Request module off', 'new-state':'mode-off'},
+                { 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
+                ]),             
             'idle': State('idle',[
-                { 'trigger':'1259', 'state':'coldstart'}])             
+                { 'trigger':'2139 Request Synchronization', 'new-state':'synchronize'},
+                { 'trigger':'1225 Service selector switch Off', 'new-state':'mode-off'},
+                { 'trigger':'1232 Request module off', 'new-state':'mode-off'},
+                { 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
+                ]),
+            'synchronize': State('synchronize',[
+                { 'trigger':'2122 Mains parallel operation', 'new-state':'net-parallel'},                
+                { 'trigger':'1225 Service selector switch Off', 'new-state':'mode-off'},
+                { 'trigger':'1232 Request module off', 'new-state':'mode-off'},
+                { 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
+                ]),             
+            'net-parallel': State('net-parallel',[
+                { 'trigger':'2122 Mains parallel operation', 'new-state':'net-parallel'},                
+                { 'trigger':'1225 Service selector switch Off', 'new-state':'mode-off'},
+                { 'trigger':'1232 Request module off', 'new-state':'mode-off'},
+                { 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
+                ])             
         }
         self.current_state = 'coldstart'
-        self.counter = 0
+        self.startversuch = 0
+        self.timing = 'off'
+        self.last_ts = None
+        self.cutlist = 10
 
     def send(self, msg):
         try:
+            actstate = self.current_state
             self.current_state = self.states[self.current_state].send(msg)
-            #print('|',self.counter, ' ', self.current_state,' ',msg['name'],msg['message'])
-            self.counter += 1
+            if self.current_state != actstate:
+                switch_ts = pd.to_datetime(int(msg['timestamp'])*1e6)
+                tt = switch_ts.strftime('%d.%m.%Y %H:%M:%S')
+                d_ts = pd.Timedelta(switch_ts - self.last_ts).round('S') if self.last_ts else pd.Timedelta(0).round('S')
+                self.last_ts = switch_ts
+                if self.current_state == 'start-preparation':
+                    self.startversuch += 1
+                    self.timing = 'on'
+                if self.current_state == 'mode-off':
+                    self.timing = 'off'
+                print(f"{tt} Δ[{str(d_ts)}] {msg['name']} {msg['message']:<40} {self.startversuch:>3d} {self.timing:>3} {actstate:<20} => {self.current_state:<20}")
         except Exception as err:
             print(str(err))
     
@@ -91,14 +109,20 @@ class msgFSM:
                               'msg':f"{m} {[msg['message'] for msg in fmessages if msg['name'] == m][0]}"
                             } for m in unique_messages]
             return len(fmessages), sorted(res_messages, key=lambda x:x['anz'], reverse=True) 
+        
+        print('''
 
+*****************************************
+* Ergebnisse (c)2022 Dieter Chvatal     *
+*****************************************
+''')
         for state in self.states:
 
             alarms, alu = filter_messages(self.states[state]._messages, 800)
-            al = "".join([f"{line['anz']:3d} {line['msg']}\n" for line in alu[:10]])
+            al = "".join([f"{line['anz']:3d} {line['msg']}\n" for line in alu[:self.cutlist]])
 
             warnings, wru = filter_messages(self.states[state]._messages, 700)
-            wn = "".join([f"{line['anz']:3d} {line['msg']}\n" for line in wru[:10]])
+            wn = "".join([f"{line['anz']:3d} {line['msg']}\n" for line in wru[:self.cutlist]])
 
             print(
 f"""{state}:
