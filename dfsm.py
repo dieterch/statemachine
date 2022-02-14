@@ -1,6 +1,8 @@
-from re import T
-import warnings
 import pandas as pd
+from tqdm.auto import tqdm
+import os
+import pickle
+
 class State:
     def __init__(self, name, transferfun_list):
         self._name = name
@@ -20,10 +22,10 @@ class State:
 
     def get_duration(self):
         return self._duration
-class msgFSM:
-    def __init__(self, dauer):
-        self.dauer = dauer
-        self.states = {
+
+class FSM:
+    initial_state = 'coldstart'
+    states = {
             'coldstart': State('coldstart',[
                 { 'trigger':'1225 Service selector switch Off', 'new-state':'mode-off'}
                 ]),
@@ -84,39 +86,108 @@ class msgFSM:
                 { 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
                 ])             
         }
-        self.current_state = 'coldstart'
-        self.startversuch = 0
-        self.successfulstart = 0
-        self.timing = 'off'
-        self.st_timer = pd.Timedelta(0)
-        self.last_ts = None
-        self.cutlist = 100
+
+
+class msgFSM:
+    def __init__(self, sn, frompickle=False):
+        if not frompickle:
+            self.load_messages(sn)
+
+            self.states = FSM.states
+            self.current_state = FSM.initial_state
+            self.act_service_selector = None
+
+            # for initialize some values for collect_data.
+            self._runlog = []
+            self.st_timing = 'off'
+            self.st_timer = pd.Timedelta(0)
+            self.last_ts = None
+            self._starts = []
+        else:
+            pfn = os.getcwd() + '/data/' + str(sn) + '_statemachine.pkl'
+            with open(pfn, 'rb') as handle:
+                self.__dict__ = pickle.load(handle)
+
+    def store(self):
+        pfn = os.getcwd() + '/data/' + str(self._sn) + '_statemachine.pkl'
+        with open(pfn, 'wb') as handle:
+            pickle.dump(self.__dict__, handle, protocol=4)
+
+    def load_messages(self,sn):
+        self._sn = sn
+        mfn = os.getcwd() + '/data/' + str(self._sn) + '_messages.pkl'
+        if os.path.exists(mfn):
+            self._messages = pd.read_pickle(mfn).reset_index()
+        else:
+            raise ValueError(f'messages for SN{self._sn} not found')
+        self._messages_first = pd.Timestamp(self._messages.iloc[0]['timestamp']*1e6)
+        self._messages_last = pd.Timestamp(self._messages.iloc[-1]['timestamp']*1e6)
+        self._whole_period = pd.Timedelta(self._messages_last - self._messages_first).round('S')
+
+    def run(self):
+        pbar = tqdm(total=self._messages.shape[0])
+        for i,msg in self._messages.iterrows():
+            self.send(msg)
+            pbar.update(i)
+        pbar.close()
+
+    def _collect_data(self, actstate, msg):
+
+        if self.current_state != actstate:
+            # Timestamp at the time of switching states
+            switch_ts = pd.to_datetime(int(msg['timestamp'])*1e6)
+            tt = switch_ts.strftime('%d.%m.%Y %H:%M:%S')
+
+            # How long have i been in actstate ?
+            d_ts = pd.Timedelta(switch_ts - self.last_ts) if self.last_ts else pd.Timedelta(0)
+
+            # Summ all states durations and store the timestamp for next pereriod.
+            self.states[actstate].add_duration(d_ts)
+            self.last_ts = switch_ts
+
+            if self.current_state == 'mode-off':
+                self.act_service_selector = 'OFF'
+            if self.current_state == 'mode-manual':
+                self.act_service_selector = 'MANUAL'
+            if self.current_state == 'mode-automatic':
+                self.act_service_selector = 'AUTO'
+
+            # a Start is happening.
+            if self.current_state == 'start-preparation':
+                self._starts.append({
+                    'success': False,
+                    'mode':self.act_service_selector,
+                    'starttime': switch_ts.round('S'),
+                    'endtime': pd.Timestamp(0),
+                    'cumtime': pd.Timedelta(0).round('S')
+                })
+                self.st_timing = 'on'
+                self.st_timer = pd.Timedelta(0)
+            elif self.st_timing == 'on' and actstate != 'coldstart':
+                self.st_timer = self.st_timer + d_ts
+                self._starts[-1][actstate] = d_ts.seconds if actstate != 'net-parallel' else d_ts.round('S')
+                if actstate != 'net-parallel':
+                    self._starts[-1]['cumtime'] = self.st_timer.seconds
+
+            if self.current_state == 'net-parallel':
+                if self.st_timing == 'on':
+                    self._starts[-1]['success'] = True   # wenn der Start bis hierhin kommt, ist er erfolgreich.
+
+            # Ein Motorlauf(-versuch) is zu Ende. 
+            if self.current_state == 'mode-off':
+                if self.st_timing == 'on':
+                    self._starts[-1]['endtime'] = switch_ts.round('S')
+                self.st_timing = 'off'
+                self.st_timer = pd.Timedelta(0)
+
+            _logtxt = f"{tt} |{actstate:<18} {d_ts.seconds:6d}s {self.st_timer.seconds:3d}s {msg['name']} {msg['message']:<40} {len(self._starts):>3d} {len([s for s in self._starts if s['success']]):>3d} {self.st_timing:>3} => {self.current_state:<20}"
+            self._runlog.append(_logtxt)
+            #print(_logtxt)
 
     def send(self, msg):
-        try:
-            actstate = self.current_state
-            self.current_state = self.states[self.current_state].send(msg)
-            if self.current_state != actstate:
-                switch_ts = pd.to_datetime(int(msg['timestamp'])*1e6)
-                tt = switch_ts.strftime('%d.%m.%Y %H:%M:%S')
-                d_ts = pd.Timedelta(switch_ts - self.last_ts) if self.last_ts else pd.Timedelta(0)
-                self.states[actstate].add_duration(d_ts)
-                self.last_ts = switch_ts
-                if self.current_state == 'start-preparation':
-                    self.startversuch += 1
-                    self.timing = 'on'
-                    self.st_timer = pd.Timedelta(0)
-                if self.current_state == 'mode-off':
-                    self.timing = 'off'
-                    self.st_timer = pd.Timedelta(0)
-                if self.current_state == 'net-parallel':
-                    if self.timing:
-                        self.successfulstart += 1
-                if self.timing == 'on':
-                    self.st_timer = self.st_timer + d_ts
-                print(f"{tt} {actstate:<18} {d_ts.seconds:6d}s {self.st_timer.seconds:3d}s {msg['name']} {msg['message']:<40} {self.startversuch:>3d} {self.successfulstart:>3d} {self.timing:>3} => {self.current_state:<20}")
-        except Exception as err:
-            print(str(err))
+        actstate = self.current_state
+        self.current_state = self.states[self.current_state].send(msg)
+        self._collect_data(actstate, msg)
     
     def completed(self):
 
@@ -161,12 +232,3 @@ Warnings total: {warnings:20d}
 {wn}
 """)
         print('completed')
-
-def Start_FSM(msgs):
-    tstart = pd.Timestamp(msgs.iloc[0]['timestamp']*1e6)
-    tend = pd.Timestamp(msgs.iloc[-1]['timestamp']*1e6)
-    tdelta = pd.Timedelta(tend-tstart).round('S')
-    fsmrunner = msgFSM(tdelta)
-    for index,msg in msgs.iterrows():
-        fsmrunner.send(msg)
-    fsmrunner.completed()
