@@ -165,9 +165,9 @@ class msgFSM:
                 self.st_timer = pd.Timedelta(0)
             elif self.st_timing == 'on' and actstate != 'coldstart':
                 self.st_timer = self.st_timer + d_ts
-                self._starts[-1][actstate] = d_ts.seconds if actstate != 'net-parallel' else d_ts.round('S')
+                self._starts[-1][actstate] = d_ts.seconds + d_ts.microseconds / 1e6 if actstate != 'net-parallel' else d_ts.round('S')
                 if actstate != 'net-parallel':
-                    self._starts[-1]['cumtime'] = self.st_timer.seconds
+                    self._starts[-1]['cumtime'] = self.st_timer.seconds + self.st_timer.microseconds / 1e6
 
             if self.current_state == 'net-parallel':
                 if self.st_timing == 'on':
