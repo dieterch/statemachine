@@ -11,7 +11,9 @@ class State:
         self._duration = pd.Timedelta(0)
     
     def send(self,msg):
-        self._messages.append(msg)
+        # store Warnings and Alarms vs. the states we are in.
+        if msg['severity'] in [700,800]:
+            self._messages.append(msg) 
         for transf in self._transf: # screen triggers
             if msg['name'] == transf['trigger'][:4]:
                 return transf['new-state']
@@ -27,7 +29,9 @@ class FSM:
     initial_state = 'coldstart'
     states = {
             'coldstart': State('coldstart',[
-                { 'trigger':'1225 Service selector switch Off', 'new-state':'mode-off'}
+                { 'trigger':'1225 Service selector switch Off', 'new-state':'mode-off'},
+                #{ 'trigger':'1226 Service selector switch Manual', 'new-state': 'mode-manual'},
+                #{ 'trigger':'1227 Service selector switch Automatic', 'new-state':'mode-automatic'},
                 ]),
             'mode-off':  State('mode-off',[
                 { 'trigger':'1226 Service selector switch Manual', 'new-state': 'mode-manual'},
@@ -89,9 +93,17 @@ class FSM:
 
 
 class msgFSM:
-    def __init__(self, sn, frompickle=False):
-        if not frompickle:
-            self.load_messages(sn)
+    def __init__(self, e, p_from = None, p_to=None, frompickle=False):
+        self._e = e
+        self._p_from = p_from
+        self._p_to = p_to
+        self.pfn = os.getcwd() + '/data/' + str(self._e._sn) + '_statemachine.pkl'
+
+        if frompickle and os.path.exists(self.pfn):
+            with open(self.pfn, 'rb') as handle:
+                self.__dict__ = pickle.load(handle)    
+        else:
+            self.load_messages(e, p_from, p_to)
 
             self.states = FSM.states
             self.current_state = FSM.initial_state
@@ -99,27 +111,21 @@ class msgFSM:
 
             # for initialize some values for collect_data.
             self._runlog = []
-            self.st_timing = 'off'
-            self.st_timer = pd.Timedelta(0)
+            self._in_operation = 'off'
+            self._timer = pd.Timedelta(0)
             self.last_ts = None
             self._starts = []
-        else:
-            pfn = os.getcwd() + '/data/' + str(sn) + '_statemachine.pkl'
-            with open(pfn, 'rb') as handle:
-                self.__dict__ = pickle.load(handle)
 
     def store(self):
-        pfn = os.getcwd() + '/data/' + str(self._sn) + '_statemachine.pkl'
-        with open(pfn, 'wb') as handle:
+        with open(self.pfn, 'wb') as handle:
             pickle.dump(self.__dict__, handle, protocol=4)
 
-    def load_messages(self,sn):
-        self._sn = sn
-        mfn = os.getcwd() + '/data/' + str(self._sn) + '_messages.pkl'
-        if os.path.exists(mfn):
-            self._messages = pd.read_pickle(mfn).reset_index()
-        else:
-            raise ValueError(f'messages for SN{self._sn} not found')
+    def unstore(self):
+        if os.path.exists(self.pfn):
+            os.remove(self.pfn)
+
+    def load_messages(self,e, p_from, p_to):
+        self._messages = e.get_messages(p_from, p_to)
         self._messages_first = pd.Timestamp(self._messages.iloc[0]['timestamp']*1e6)
         self._messages_last = pd.Timestamp(self._messages.iloc[-1]['timestamp']*1e6)
         self._whole_period = pd.Timedelta(self._messages_last - self._messages_first).round('S')
@@ -131,12 +137,58 @@ class msgFSM:
             pbar.update(i)
         pbar.close()
 
+    def _fsm_Service_selector(self):
+        if self.current_state == 'mode-off':
+            self.act_service_selector = 'OFF'
+        if self.current_state == 'mode-manual':
+            self.act_service_selector = 'MANUAL'
+        if self.current_state == 'mode-automatic':
+            self.act_service_selector = 'AUTO'
+
+    def _fsm_Operating_Cycle(self, actstate, newstate, switch_point, duration, msg):
+
+        def _to_sec(time_object):
+            return float(time_object.seconds) + float(time_object.microseconds) / 1e6
+
+        # Start Preparatio => the Engine ist starting
+        if self.current_state == 'start-preparation':
+            # apens a new record to the Starts list.
+            self._starts.append({
+                'success': False,
+                'mode':self.act_service_selector,
+                'starttime': switch_point.round('S'),
+                'endtime': pd.Timestamp(0),
+                'cumtime': pd.Timedelta(0).round('S')
+            })
+            # indicate a 
+            self._in_operation = 'on'
+            self._timer = pd.Timedelta(0)
+        elif self._in_operation == 'on' and actstate != 'coldstart':
+            self._timer = self._timer + duration
+            self._starts[-1][actstate] = _to_sec(duration) if actstate != 'net-parallel' else duration.round('S')
+            if actstate != 'net-parallel':
+                self._starts[-1]['cumtime'] = _to_sec(self._timer)
+
+        if self.current_state == 'net-parallel':
+            if self._in_operation == 'on':
+                self._starts[-1]['success'] = True   # wenn der Start bis hierhin kommt, ist er erfolgreich.
+
+        # Ein Motorlauf(-versuch) is zu Ende. 
+        if self.current_state == 'mode-off':
+            if self._in_operation == 'on':
+                self._starts[-1]['endtime'] = switch_point.round('S')
+            self._in_operation = 'off'
+            self._timer = pd.Timedelta(0)
+
+        _logtxt = f"{switch_point.strftime('%d.%m.%Y %H:%M:%S')} |{actstate:<18} {_to_sec(duration):6.1f}s {_to_sec(self._timer):3.1f}s {msg['name']} {msg['message']:<40} {len(self._starts):>3d} {len([s for s in self._starts if s['success']]):>3d} {self._in_operation:>3} => {self.current_state:<20}"
+        #self._runlog.append(_logtxt)
+
+
     def _collect_data(self, actstate, msg):
 
         if self.current_state != actstate:
             # Timestamp at the time of switching states
             switch_ts = pd.to_datetime(int(msg['timestamp'])*1e6)
-            tt = switch_ts.strftime('%d.%m.%Y %H:%M:%S')
 
             # How long have i been in actstate ?
             d_ts = pd.Timedelta(switch_ts - self.last_ts) if self.last_ts else pd.Timedelta(0)
@@ -145,51 +197,37 @@ class msgFSM:
             self.states[actstate].add_duration(d_ts)
             self.last_ts = switch_ts
 
-            if self.current_state == 'mode-off':
-                self.act_service_selector = 'OFF'
-            if self.current_state == 'mode-manual':
-                self.act_service_selector = 'MANUAL'
-            if self.current_state == 'mode-automatic':
-                self.act_service_selector = 'AUTO'
-
-            # a Start is happening.
-            if self.current_state == 'start-preparation':
-                self._starts.append({
-                    'success': False,
-                    'mode':self.act_service_selector,
-                    'starttime': switch_ts.round('S'),
-                    'endtime': pd.Timestamp(0),
-                    'cumtime': pd.Timedelta(0).round('S')
-                })
-                self.st_timing = 'on'
-                self.st_timer = pd.Timedelta(0)
-            elif self.st_timing == 'on' and actstate != 'coldstart':
-                self.st_timer = self.st_timer + d_ts
-                self._starts[-1][actstate] = d_ts.seconds if actstate != 'net-parallel' else d_ts.round('S')
-                if actstate != 'net-parallel':
-                    self._starts[-1]['cumtime'] = self.st_timer.seconds
-
-            if self.current_state == 'net-parallel':
-                if self.st_timing == 'on':
-                    self._starts[-1]['success'] = True   # wenn der Start bis hierhin kommt, ist er erfolgreich.
-
-            # Ein Motorlauf(-versuch) is zu Ende. 
-            if self.current_state == 'mode-off':
-                if self.st_timing == 'on':
-                    self._starts[-1]['endtime'] = switch_ts.round('S')
-                self.st_timing = 'off'
-                self.st_timer = pd.Timedelta(0)
-
-            _logtxt = f"{tt} |{actstate:<18} {d_ts.seconds:6d}s {self.st_timer.seconds:3d}s {msg['name']} {msg['message']:<40} {len(self._starts):>3d} {len([s for s in self._starts if s['success']]):>3d} {self.st_timing:>3} => {self.current_state:<20}"
-            self._runlog.append(_logtxt)
-            #print(_logtxt)
+            # state machine for service Selector Switch
+            self._fsm_Service_selector()
+            self._fsm_Operating_Cycle(actstate, self.current_state, switch_ts, d_ts, msg)
 
     def send(self, msg):
         actstate = self.current_state
         self.current_state = self.states[self.current_state].send(msg)
         self._collect_data(actstate, msg)
     
-    def completed(self):
+    def _pareto(self, severity, states = []):
+        rmessages = []
+        for state in states:
+            rmessages += [msg for msg in self.states[state]._messages if msg['severity'] == severity]
+        unique_res = set([msg['name'] for msg in rmessages])
+        res = [{ 'anz': len([msg for msg in rmessages if msg['name'] == m]),
+                 'name':m,
+                 'msg':f"{str([msg['message'] for msg in rmessages if msg['name'] == m][0]):>}"
+                } for m in unique_res]
+        return sorted(res, key=lambda x:x['anz'], reverse=True)
+
+    def alarms_pareto(self, states):
+        return pd.DataFrame(self._pareto(800, states))
+
+    def warnings_pareto(self, states):
+        return pd.DataFrame(self._pareto(700, states))
+
+    @property
+    def period(self):
+        return self._whole_period
+
+    def completed(self, limit_to = 10):
 
         def filter_messages(messages, severity):
             fmessages = [msg for msg in messages if msg['severity'] == severity]
@@ -204,22 +242,22 @@ class msgFSM:
 *****************************************
 * Ergebnisse (c)2022 Dieter Chvatal     *
 *****************************************
-gesamter Zeitraum: {self.dauer.round('S')}
+gesamter Zeitraum: {self._whole_period.round('S')}
 
 ''')
         for state in self.states:
 
             alarms, alu = filter_messages(self.states[state]._messages, 800)
-            al = "".join([f"{line['anz']:3d} {line['msg']}\n" for line in alu[:self.cutlist]])
+            al = "".join([f"{line['anz']:3d} {line['msg']}\n" for line in alu[:limit_to]])
 
             warnings, wru = filter_messages(self.states[state]._messages, 700)
-            wn = "".join([f"{line['anz']:3d} {line['msg']}\n" for line in wru[:self.cutlist]])
+            wn = "".join([f"{line['anz']:3d} {line['msg']}\n" for line in wru[:limit_to]])
 
             print(
 f"""
 {state}:
 Dauer       : {str(self.states[state].get_duration().round('S')):>20}  
-Anteil      : {self.states[state].get_duration()/self.dauer*100.0:20.2f}%
+Anteil      : {self.states[state].get_duration()/self._whole_period*100.0:20.2f}%
 Messages    : {len(self.states[state]._messages):20} 
 Alarms total: {alarms:20d}
       unique: {len(alu):20d}
