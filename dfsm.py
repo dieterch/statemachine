@@ -78,12 +78,14 @@ class FSM:
                 { 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
                 ]),
             'synchronize': State('synchronize',[
+                { 'trigger':'1235 Generator CB closed', 'new-state':'net-parallel'},                
                 { 'trigger':'2122 Mains parallel operation', 'new-state':'net-parallel'},                
                 { 'trigger':'1225 Service selector switch Off', 'new-state':'mode-off'},
                 { 'trigger':'1232 Request module off', 'new-state':'mode-off'},
                 { 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
                 ]),             
             'net-parallel': State('net-parallel',[
+                { 'trigger':'1236 Generator CB opened', 'new-state':'idle'},                
                 { 'trigger':'2122 Mains parallel operation', 'new-state':'net-parallel'},                
                 { 'trigger':'1225 Service selector switch Off', 'new-state':'mode-off'},
                 { 'trigger':'1232 Request module off', 'new-state':'mode-off'},
@@ -129,6 +131,11 @@ class msgFSM:
         self._messages_first = pd.Timestamp(self._messages.iloc[0]['timestamp']*1e6)
         self._messages_last = pd.Timestamp(self._messages.iloc[-1]['timestamp']*1e6)
         self._whole_period = pd.Timedelta(self._messages_last - self._messages_first).round('S')
+
+    def save_messages(self, fn):
+        with open(fn, 'w') as f:
+            for index, msg in self._messages.iterrows():
+                f.write(f"{index:>06} {msg['severity']} {msg['timestamp']} {pd.to_datetime(int(msg['timestamp'])*1e6).strftime('%d.%m.%Y %H:%M:%S')}  {msg['name']} {msg['message']}\n")
 
     def run(self):
         pbar = tqdm(total=self._messages.shape[0])
