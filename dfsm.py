@@ -208,6 +208,8 @@ class msgFSM:
     
     def _pareto(self, severity, states = []):
         rmessages = []
+        if type(states) == str:
+            states = [states]
         for state in states:
             rmessages += [msg for msg in self.states[state]._messages if msg['severity'] == severity]
         unique_res = set([msg['name'] for msg in rmessages])
