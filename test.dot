@@ -3,7 +3,7 @@ digraph G {
     node [fontname="monospace" fontsize=10  shape="circle"]
     edge [fontname="monospace" color="grey" fontsize=10]
     standstill [label="standstill"]
-    standstill -> startpreparation [label="1231 Request module on"]
+    standstill -> startpreparation [label="1265 Demand gas leakage check gas train 1"]
     startpreparation [label="start-preparation"]
     startpreparation -> starter [label="1249 Starter on"]
     startpreparation -> standstill [label="1232 Request module off"]

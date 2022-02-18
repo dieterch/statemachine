@@ -2,6 +2,9 @@ import pandas as pd
 from tqdm.auto import tqdm
 import os
 import pickle
+from pprint import pformat as pf
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 class State:
     def __init__(self, name, transferfun_list):
@@ -34,8 +37,8 @@ class FSM:
             #     #{ 'trigger':'1227 Service selector switch Automatic', 'new-state':'mode-automatic'},
             #     ]),
             'standstill': State('standstill',[
-                #{ 'trigger':'1231 Request module on', 'new-state': 'start-preparation'},
-                { 'trigger':'1265 Demand gas leakage check gas train 1', 'new-state':'start-preparation'}
+                { 'trigger':'1231 Request module on', 'new-state': 'start-preparation'},
+                #{ 'trigger':'1265 Demand gas leakage check gas train 1', 'new-state':'start-preparation'}
                 #{ 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}                
                 ]),
             'start-preparation': State('start-preparation',[
@@ -74,6 +77,23 @@ class FSM:
                 ])       
         }
 
+    @classmethod
+    def dot(cls, fn):
+        """Create a FSM Diagram of specified states in *.dot Format
+
+        Args:
+            fn : Filename
+        """
+        with open(fn, 'w') as f:
+            f.write("digraph G {\n")
+            f.write('    graph [rankdir=TB labelfontcolor=red fontname="monospace" nodesep=1 size="20,33"]\n')
+            f.write('    node [fontname="monospace" fontsize=10  shape="circle"]\n')
+            f.write('    edge [fontname="monospace" color="grey" fontsize=10]\n')
+            for s in cls.states:
+                f.write(f'    {s.replace("-","")} [label="{s}"]\n')
+                for t in cls.states[s]._transf:
+                    f.write(f'    {s.replace("-","")} -> {t["new-state"].replace("-","")} [label="{t["trigger"]}"]\n')
+            f.write("}\n")
 
 class msgFSM:
     def __init__(self, e, p_from = None, p_to=None, frompickle=False):
@@ -109,36 +129,22 @@ class msgFSM:
 
     def load_messages(self,e, p_from, p_to):
         self._messages = e.get_messages(p_from, p_to)
-        self._messages_first = pd.Timestamp(self._messages.iloc[0]['timestamp']*1e6)
-        self._messages_last = pd.Timestamp(self._messages.iloc[-1]['timestamp']*1e6)
-        self._whole_period = pd.Timedelta(self._messages_last - self._messages_first).round('S')
+        self.count_messages = self._messages.shape[0]
+        self.first_message = pd.Timestamp(self._messages.iloc[0]['timestamp']*1e6)
+        self.last_message = pd.Timestamp(self._messages.iloc[-1]['timestamp']*1e6)
+        self._period = pd.Timedelta(self.last_message - self.first_message).round('S')
 
     def save_messages(self, fn):
         with open(fn, 'w') as f:
             for index, msg in self._messages.iterrows():
                 f.write(f"{index:>06} {msg['severity']} {msg['timestamp']} {pd.to_datetime(int(msg['timestamp'])*1e6).strftime('%d.%m.%Y %H:%M:%S')}  {msg['name']} {msg['message']}\n")
+                if msg['associatedValues'] == msg['associatedValues']:  # if not NaN ...
+                    f.write(f"{pf(msg['associatedValues'])}\n\n")
 
     def run(self):
-        pbar = tqdm(total=self._messages.shape[0])
-        for i,msg in self._messages.iterrows():
+        for i,msg in tqdm(self._messages.iterrows(), total=self._messages.shape[0], ncols=120, mininterval=1, unit=' messages', desc="Scan Messages"):
             self.send(msg)
-            pbar.update(i)
-        pbar.close()
-
-    def _dot(self, fn):
-        with open(fn, 'w') as f:
-            f.write("""
-digraph G { 
-    graph [rankdir=TB labelfontcolor=red fontname="monospace" nodesep=1 size="20,33"]
-    node [fontname="monospace" fontsize=10  shape="circle"]
-    edge [fontname="monospace" color="grey" fontsize=10]\n
-""")
-            for s in self.states:
-                f.write(f'    {s.replace("-","")} [label="{s}"]\n')
-                for t in self.states[s]._transf:
-                    f.write(f'    {s.replace("-","")} -> {t["new-state"].replace("-","")} [label="{t["trigger"]}"]\n')
-            f.write("}\n")
-
+         
     #1225 Service selector switch Off
     #1226 Service selector switch Manual
     #1227 Service selector switch Automatic
@@ -163,7 +169,9 @@ digraph G {
                 'mode':self.act_service_selector,
                 'starttime': switch_point.round('S'),
                 'endtime': pd.Timestamp(0),
-                'cumtime': pd.Timedelta(0).round('S')
+                'cumtime': pd.Timedelta(0).round('S'),
+                'alarms': [],
+                'warnings': []
             })
             # indicate a 
             self._in_operation = 'on'
@@ -171,7 +179,7 @@ digraph G {
         elif self._in_operation == 'on' and actstate != FSM.initial_state:
             self._timer = self._timer + duration
             self._starts[-1][actstate] = _to_sec(duration) if actstate != 'target-operation' else duration.round('S')
-            if actstate != 'target-operation':
+            if actstate not in ['load-ramp','target-operation']:
                 self._starts[-1]['cumtime'] = _to_sec(self._timer)
 
         if self.current_state == 'load-ramp':  #'target-operation'
@@ -191,6 +199,13 @@ digraph G {
 
     def _collect_data(self, actstate, msg):
         self._fsm_Service_selector(msg)
+
+        if self._in_operation == 'on':
+            if msg['severity'] == 800:
+                self._starts[-1]['alarms'].append({'state':self.current_state, 'msg': msg})
+            if msg['severity'] == 700:
+                self._starts[-1]['warnings'].append({'state':self.current_state, 'msg': msg})
+            
         if self.current_state != actstate:
             # Timestamp at the time of switching states
             switch_ts = pd.to_datetime(int(msg['timestamp'])*1e6)
@@ -248,7 +263,7 @@ digraph G {
 *****************************************
 * Ergebnisse (c)2022 Dieter Chvatal     *
 *****************************************
-gesamter Zeitraum: {self._whole_period.round('S')}
+gesamter Zeitraum: {self._period.round('S')}
 
 ''')
         for state in self.states:
