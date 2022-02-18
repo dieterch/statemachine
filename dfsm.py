@@ -26,71 +26,52 @@ class State:
         return self._duration
 
 class FSM:
-    initial_state = 'coldstart'
+    initial_state = 'standstill'
     states = {
-            'coldstart': State('coldstart',[
-                { 'trigger':'1225 Service selector switch Off', 'new-state':'mode-off'},
-                #{ 'trigger':'1226 Service selector switch Manual', 'new-state': 'mode-manual'},
-                #{ 'trigger':'1227 Service selector switch Automatic', 'new-state':'mode-automatic'},
-                ]),
-            'mode-off':  State('mode-off',[
-                { 'trigger':'1226 Service selector switch Manual', 'new-state': 'mode-manual'},
-                { 'trigger':'1227 Service selector switch Automatic', 'new-state':'mode-automatic'},
-                { 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
-                ]),
-            'mode-manual': State('mode-manual',[
-                { 'trigger':'1227 Service selector switch Automatic', 'new-state':'mode-automatic'},
-                { 'trigger':'1265 Demand gas leakage check gas train 1', 'new-state':'start-preparation'},
-                #{ 'trigger':'1267 Demand gas leakage check gas train 2', 'new-state':'start-preparation'},
-                { 'trigger':'1225 Service selector switch Off', 'new-state':'mode-off'},
-                { 'trigger':'1232 Request module off', 'new-state':'mode-off'},
-                { 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
-                ]),
-            'mode-automatic': State('mode-automatic',[
-                { 'trigger':'1265 Demand gas leakage check gas train 1', 'new-state':'start-preparation'},
-                { 'trigger':'1226 Service selector switch Manual', 'new-state':'mode-manual'},
-                { 'trigger':'1225 Service selector switch Off', 'new-state':'mode-off'},
-                { 'trigger':'1232 Request module off', 'new-state':'mode-off'},
-                { 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
+            # 'coldstart': State('coldstart',[
+            #     { 'trigger':'1225 Service selector switch Off', 'new-state':'standstill'},
+            #     #{ 'trigger':'1226 Service selector switch Manual', 'new-state': 'mode-manual'},
+            #     #{ 'trigger':'1227 Service selector switch Automatic', 'new-state':'mode-automatic'},
+            #     ]),
+            'standstill': State('standstill',[
+                #{ 'trigger':'1231 Request module on', 'new-state': 'start-preparation'},
+                { 'trigger':'1265 Demand gas leakage check gas train 1', 'new-state':'start-preparation'}
+                #{ 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}                
                 ]),
             'start-preparation': State('start-preparation',[
                 { 'trigger':'1249 Starter on', 'new-state': 'starter'},
-                { 'trigger':'1225 Service selector switch Off', 'new-state':'mode-off'},
-                { 'trigger':'1232 Request module off', 'new-state': 'mode-off'},
-                { 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
+                { 'trigger':'1232 Request module off', 'new-state': 'standstill'}
+                #{ 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
                 ]),
             'starter': State('starter',[
                 { 'trigger':'3225 Ignition on', 'new-state':'hochlauf'},
-                { 'trigger':'1225 Service selector switch Off', 'new-state':'mode-off'},
-                { 'trigger':'1232 Request module off', 'new-state':'mode-off'},
-                { 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
+                { 'trigger':'1232 Request module off', 'new-state':'standstill'}
+                #{ 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
                 ]),
             'hochlauf': State('hochlauf',[
                 { 'trigger':'2124 Idle', 'new-state':'idle'},
-                { 'trigger':'1225 Service selector switch Off', 'new-state':'mode-off'},
-                { 'trigger':'1232 Request module off', 'new-state':'mode-off'},
-                { 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
+                { 'trigger':'3226 Ignition off', 'new-state':'standstill'}
+                #{ 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
                 ]),             
             'idle': State('idle',[
                 { 'trigger':'2139 Request Synchronization', 'new-state':'synchronize'},
-                { 'trigger':'1225 Service selector switch Off', 'new-state':'mode-off'},
-                { 'trigger':'1232 Request module off', 'new-state':'mode-off'},
-                { 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
+                { 'trigger':'3226 Ignition off', 'new-state':'standstill'}
+                #{ 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
                 ]),
             'synchronize': State('synchronize',[
-                { 'trigger':'1235 Generator CB closed', 'new-state':'net-parallel'},                
-                { 'trigger':'2122 Mains parallel operation', 'new-state':'net-parallel'},                
-                { 'trigger':'1225 Service selector switch Off', 'new-state':'mode-off'},
-                { 'trigger':'1232 Request module off', 'new-state':'mode-off'},
-                { 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
+                { 'trigger':'1235 Generator CB closed', 'new-state':'load-ramp'},                
+                { 'trigger':'3226 Ignition off', 'new-state':'standstill'}
+                #{ 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
                 ]),             
-            'net-parallel': State('net-parallel',[
-                { 'trigger':'1236 Generator CB opened', 'new-state':'idle'},                
-                { 'trigger':'2122 Mains parallel operation', 'new-state':'net-parallel'},                
-                { 'trigger':'1225 Service selector switch Off', 'new-state':'mode-off'},
-                { 'trigger':'1232 Request module off', 'new-state':'mode-off'},
-                { 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
-                ])             
+            'load-ramp': State('load-ramp',[
+                { 'trigger':'9047 Target load reached', 'new-state':'target-operation'},
+                { 'trigger':'3226 Ignition off', 'new-state':'standstill'}
+                #{ 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
+                ]),             
+            'target-operation': State('target-operation',[
+                { 'trigger':'1236 Generator CB opened', 'new-state':'idle'},
+                { 'trigger':'3226 Ignition off', 'new-state':'standstill'}
+                ])       
         }
 
 
@@ -109,7 +90,7 @@ class msgFSM:
 
             self.states = FSM.states
             self.current_state = FSM.initial_state
-            self.act_service_selector = None
+            self.act_service_selector = ''
 
             # for initialize some values for collect_data.
             self._runlog = []
@@ -144,12 +125,29 @@ class msgFSM:
             pbar.update(i)
         pbar.close()
 
-    def _fsm_Service_selector(self):
-        if self.current_state == 'mode-off':
+    def _dot(self, fn):
+        with open(fn, 'w') as f:
+            f.write("""
+digraph G { 
+    graph [rankdir=TB labelfontcolor=red fontname="monospace" nodesep=1 size="20,33"]
+    node [fontname="monospace" fontsize=10  shape="circle"]
+    edge [fontname="monospace" color="grey" fontsize=10]\n
+""")
+            for s in self.states:
+                f.write(f'    {s.replace("-","")} [label="{s}"]\n')
+                for t in self.states[s]._transf:
+                    f.write(f'    {s.replace("-","")} -> {t["new-state"].replace("-","")} [label="{t["trigger"]}"]\n')
+            f.write("}\n")
+
+    #1225 Service selector switch Off
+    #1226 Service selector switch Manual
+    #1227 Service selector switch Automatic
+    def _fsm_Service_selector(self, msg):
+        if msg['name'] == '1225 Service selector switch Off'[:4]:
             self.act_service_selector = 'OFF'
-        if self.current_state == 'mode-manual':
+        if msg['name'] == '1226 Service selector switch Manual'[:4]:
             self.act_service_selector = 'MANUAL'
-        if self.current_state == 'mode-automatic':
+        if msg['name'] == '1227 Service selector switch Automatic'[:4]:
             self.act_service_selector = 'AUTO'
 
     def _fsm_Operating_Cycle(self, actstate, newstate, switch_point, duration, msg):
@@ -170,29 +168,29 @@ class msgFSM:
             # indicate a 
             self._in_operation = 'on'
             self._timer = pd.Timedelta(0)
-        elif self._in_operation == 'on' and actstate != 'coldstart':
+        elif self._in_operation == 'on' and actstate != FSM.initial_state:
             self._timer = self._timer + duration
-            self._starts[-1][actstate] = _to_sec(duration) if actstate != 'net-parallel' else duration.round('S')
-            if actstate != 'net-parallel':
+            self._starts[-1][actstate] = _to_sec(duration) if actstate != 'target-operation' else duration.round('S')
+            if actstate != 'target-operation':
                 self._starts[-1]['cumtime'] = _to_sec(self._timer)
 
-        if self.current_state == 'net-parallel':
+        if self.current_state == 'load-ramp':  #'target-operation'
             if self._in_operation == 'on':
                 self._starts[-1]['success'] = True   # wenn der Start bis hierhin kommt, ist er erfolgreich.
 
         # Ein Motorlauf(-versuch) is zu Ende. 
-        if self.current_state == 'mode-off':
+        if self.current_state == 'standstill': #'mode-off'
             if self._in_operation == 'on':
                 self._starts[-1]['endtime'] = switch_point.round('S')
             self._in_operation = 'off'
             self._timer = pd.Timedelta(0)
 
-        _logtxt = f"{switch_point.strftime('%d.%m.%Y %H:%M:%S')} |{actstate:<18} {_to_sec(duration):6.1f}s {_to_sec(self._timer):3.1f}s {msg['name']} {msg['message']:<40} {len(self._starts):>3d} {len([s for s in self._starts if s['success']]):>3d} {self._in_operation:>3} => {self.current_state:<20}"
-        #self._runlog.append(_logtxt)
+        _logtxt = f"{switch_point.strftime('%d.%m.%Y %H:%M:%S')} |{actstate:<18} {_to_sec(duration):8.1f}s {_to_sec(self._timer):6.1f}s {msg['name']} {msg['message']:<40} {len(self._starts):>3d} {len([s for s in self._starts if s['success']]):>3d} {self._in_operation:>3} {self.act_service_selector:>4} => {self.current_state:<20}"
+        self._runlog.append(_logtxt)
 
 
     def _collect_data(self, actstate, msg):
-
+        self._fsm_Service_selector(msg)
         if self.current_state != actstate:
             # Timestamp at the time of switching states
             switch_ts = pd.to_datetime(int(msg['timestamp'])*1e6)
@@ -205,7 +203,6 @@ class msgFSM:
             self.last_ts = switch_ts
 
             # state machine for service Selector Switch
-            self._fsm_Service_selector()
             self._fsm_Operating_Cycle(actstate, self.current_state, switch_ts, d_ts, msg)
 
     def send(self, msg):
