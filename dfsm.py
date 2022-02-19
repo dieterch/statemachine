@@ -118,10 +118,14 @@ class msgFSM:
             self._timer = pd.Timedelta(0)
             self.last_ts = None
             self._starts = []
+            self.full_load_timestamp = None
 
     def store(self):
-        with open(self.pfn, 'wb') as handle:
-            pickle.dump(self.__dict__, handle, protocol=4)
+        try:
+            with open(self.pfn, 'wb') as handle:
+                pickle.dump(self.__dict__, handle, protocol=4)
+        except:
+            pass
 
     def unstore(self):
         if os.path.exists(self.pfn):
@@ -179,10 +183,10 @@ class msgFSM:
         elif self._in_operation == 'on' and actstate != FSM.initial_state:
             self._timer = self._timer + duration
             self._starts[-1][actstate] = _to_sec(duration) if actstate != 'target-operation' else duration.round('S')
-            if actstate not in ['load-ramp','target-operation']:
+            if actstate != 'target-operation':
                 self._starts[-1]['cumtime'] = _to_sec(self._timer)
 
-        if self.current_state == 'load-ramp':  #'target-operation'
+        if self.current_state == 'target-operation':
             if self._in_operation == 'on':
                 self._starts[-1]['success'] = True   # wenn der Start bis hierhin kommt, ist er erfolgreich.
 
@@ -200,6 +204,7 @@ class msgFSM:
     def _collect_data(self, actstate, msg):
         self._fsm_Service_selector(msg)
 
+        # collect alarms & warnings vs. Starts
         if self._in_operation == 'on':
             if msg['severity'] == 800:
                 self._starts[-1]['alarms'].append({'state':self.current_state, 'msg': msg})
@@ -222,7 +227,22 @@ class msgFSM:
 
     def send(self, msg):
         actstate = self.current_state
-        self.current_state = self.states[self.current_state].send(msg)
+
+        if self.full_load_timestamp == None:
+            self.current_state = self.states[self.current_state].send(msg)
+        elif int(msg['timestamp']) < self.full_load_timestamp:
+            self.current_state = self.states[self.current_state].send(msg)
+        elif int(msg['timestamp']) >= self.full_load_timestamp:
+            dmsg = {'name':'9047', 'message':'Target load reached (calculated)','timestamp':self.full_load_timestamp,'severity':600}
+            self.full_load_timestamp = None
+            self.current_state = self.states[self.current_state].send(dmsg)
+            self._collect_data(actstate, dmsg)
+            actstate = self.current_state            
+
+        # Algorithm to switch from 'load-ramp to' 'target-operation'
+        if self.current_state == 'load-ramp' and self.full_load_timestamp == None:  # direct bein Umschalten das Ende der Rampe berechnen
+            self.full_load_timestamp = int(msg['timestamp']) + int(100.0 / self._e['rP_Ramp_Set'] * 1e3)
+
         self._collect_data(actstate, msg)
     
     def _pareto(self, severity, states = []):
