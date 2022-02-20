@@ -1,3 +1,4 @@
+import arrow
 import pandas as pd
 from tqdm.auto import tqdm
 import os
@@ -72,7 +73,7 @@ class FSM:
                 #{ 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
                 ]),             
             'target-operation': State('target-operation',[
-                { 'trigger':'1236 Generator CB opened', 'new-state':'idle'},
+                #{ 'trigger':'1236 Generator CB opened', 'new-state':'idle'},
                 { 'trigger':'3226 Ignition off', 'new-state':'standstill'}
                 ])       
         }
@@ -96,7 +97,7 @@ class FSM:
             f.write("}\n")
 
 class msgFSM:
-    def __init__(self, e, p_from = None, p_to=None, frompickle=False):
+    def __init__(self, e, p_from = None, p_to=None, frompickle=False, skip_days=None):
         self._e = e
         self._p_from = p_from
         self._p_to = p_to
@@ -106,8 +107,9 @@ class msgFSM:
             with open(self.pfn, 'rb') as handle:
                 self.__dict__ = pickle.load(handle)    
         else:
-            self.load_messages(e, p_from, p_to)
+            self.load_messages(e, p_from, p_to, skip_days)
 
+            self._target_load_message = any(self._messages['name'] == '9047')
             self.states = FSM.states
             self.current_state = FSM.initial_state
             self.act_service_selector = ''
@@ -131,19 +133,23 @@ class msgFSM:
         if os.path.exists(self.pfn):
             os.remove(self.pfn)
 
-    def load_messages(self,e, p_from, p_to):
+    def load_messages(self,e, p_from, p_to, skip_days):
         self._messages = e.get_messages(p_from, p_to)
-        self.count_messages = self._messages.shape[0]
         self.first_message = pd.Timestamp(self._messages.iloc[0]['timestamp']*1e6)
         self.last_message = pd.Timestamp(self._messages.iloc[-1]['timestamp']*1e6)
         self._period = pd.Timedelta(self.last_message - self.first_message).round('S')
+        if skip_days and not p_from:
+            self.first_message = pd.Timestamp(arrow.get(self.first_message).shift(days=skip_days).timestamp()*1e9)
+            self._messages = self._messages[self._messages['timestamp'] > int(arrow.get(self.first_message).shift(days=skip_days).timestamp()*1e3)]
+        self.count_messages = self._messages.shape[0]
 
     def save_messages(self, fn):
         with open(fn, 'w') as f:
             for index, msg in self._messages.iterrows():
                 f.write(f"{index:>06} {msg['severity']} {msg['timestamp']} {pd.to_datetime(int(msg['timestamp'])*1e6).strftime('%d.%m.%Y %H:%M:%S')}  {msg['name']} {msg['message']}\n")
-                if msg['associatedValues'] == msg['associatedValues']:  # if not NaN ...
-                    f.write(f"{pf(msg['associatedValues'])}\n\n")
+                if 'associatedValues' in msg:
+                    if msg['associatedValues'] == msg['associatedValues']:  # if not NaN ...
+                        f.write(f"{pf(msg['associatedValues'])}\n\n")
 
     def run(self):
         for i,msg in tqdm(self._messages.iterrows(), total=self._messages.shape[0], ncols=120, mininterval=1, unit=' messages', desc="Scan Messages"):
@@ -167,24 +173,24 @@ class msgFSM:
 
         # Start Preparatio => the Engine ist starting
         if self.current_state == 'start-preparation':
-            # apens a new record to the Starts list.
+            # apends a new record to the Starts list.
             self._starts.append({
                 'success': False,
                 'mode':self.act_service_selector,
                 'starttime': switch_point.round('S'),
                 'endtime': pd.Timestamp(0),
-                'cumtime': pd.Timedelta(0).round('S'),
+                'cumstarttime': pd.Timedelta(0),
                 'alarms': [],
                 'warnings': []
             })
             # indicate a 
             self._in_operation = 'on'
             self._timer = pd.Timedelta(0)
-        elif self._in_operation == 'on' and actstate != FSM.initial_state:
+        elif self._in_operation == 'on': # and actstate != FSM.initial_state:
             self._timer = self._timer + duration
             self._starts[-1][actstate] = _to_sec(duration) if actstate != 'target-operation' else duration.round('S')
             if actstate != 'target-operation':
-                self._starts[-1]['cumtime'] = _to_sec(self._timer)
+                self._starts[-1]['cumstarttime'] = _to_sec(self._timer)
 
         if self.current_state == 'target-operation':
             if self._in_operation == 'on':
@@ -192,12 +198,14 @@ class msgFSM:
 
         # Ein Motorlauf(-versuch) is zu Ende. 
         if self.current_state == 'standstill': #'mode-off'
+        #if actstate == 'load-ramp': # übergang von loadramp to 'target-operation'
             if self._in_operation == 'on':
                 self._starts[-1]['endtime'] = switch_point.round('S')
             self._in_operation = 'off'
             self._timer = pd.Timedelta(0)
 
         _logtxt = f"{switch_point.strftime('%d.%m.%Y %H:%M:%S')} |{actstate:<18} {_to_sec(duration):8.1f}s {_to_sec(self._timer):6.1f}s {msg['name']} {msg['message']:<40} {len(self._starts):>3d} {len([s for s in self._starts if s['success']]):>3d} {self._in_operation:>3} {self.act_service_selector:>4} => {self.current_state:<20}"
+        #_logtxt = f"{switch_point.strftime('%d.%m.%Y %H:%M:%S')} |{actstate:<18} {_to_sec(duration):8.1f}s {msg['name']} {msg['message']:<40} {len(self._starts):>3d} {len([s for s in self._starts if s['success']]):>3d} {self._in_operation:>3} {self.act_service_selector:>4} => {self.current_state:<20}"
         self._runlog.append(_logtxt)
 
 
@@ -213,7 +221,7 @@ class msgFSM:
             
         if self.current_state != actstate:
             # Timestamp at the time of switching states
-            switch_ts = pd.to_datetime(int(msg['timestamp'])*1e6)
+            switch_ts = pd.to_datetime(float(msg['timestamp'])*1e6)
 
             # How long have i been in actstate ?
             d_ts = pd.Timedelta(switch_ts - self.last_ts) if self.last_ts else pd.Timedelta(0)
@@ -228,45 +236,49 @@ class msgFSM:
     def send(self, msg):
         actstate = self.current_state
 
-        if self.full_load_timestamp == None:
+        if self._target_load_message:
             self.current_state = self.states[self.current_state].send(msg)
-        elif int(msg['timestamp']) < self.full_load_timestamp:
-            self.current_state = self.states[self.current_state].send(msg)
-        elif int(msg['timestamp']) >= self.full_load_timestamp:
-            dmsg = {'name':'9047', 'message':'Target load reached (calculated)','timestamp':self.full_load_timestamp,'severity':600}
-            self.full_load_timestamp = None
-            self.current_state = self.states[self.current_state].send(dmsg)
-            self._collect_data(actstate, dmsg)
-            actstate = self.current_state            
+        else: # berechne die Zeit bis Vollast
+            if self.full_load_timestamp == None or int(msg['timestamp']) < self.full_load_timestamp:
+                self.current_state = self.states[self.current_state].send(msg)
+            elif int(msg['timestamp']) >= self.full_load_timestamp: # now switch to 'target-operation'
+                dmsg = {'name':'9047', 'message':'Target load reached (calculated)','timestamp':self.full_load_timestamp,'severity':600}
+                self.current_state = self.states[self.current_state].send(dmsg)
+                self._collect_data(actstate, dmsg)
+                self.full_load_timestamp = None
+                actstate = self.current_state            
 
-        # Algorithm to switch from 'load-ramp to' 'target-operation'
-        if self.current_state == 'load-ramp' and self.full_load_timestamp == None:  # direct bein Umschalten das Ende der Rampe berechnen
-            self.full_load_timestamp = int(msg['timestamp']) + int(100.0 / self._e['rP_Ramp_Set'] * 1e3)
+            # Algorithm to switch from 'load-ramp to' 'target-operation'
+            if self.current_state == 'load-ramp' and self.full_load_timestamp == None:  # direct bein Umschalten das Ende der Rampe berechnen
+                self.full_load_timestamp = int(msg['timestamp']) + int(100.0 / self._e['rP_Ramp_Set'] * 1e3)
 
         self._collect_data(actstate, msg)
     
-    def _pareto(self, severity, states = []):
+    def _pareto(self, mm):
+        unique_res = set([msg['name'] for msg in mm])
+        res = [{ 'anz': len([msg for msg in mm if msg['name'] == m]),
+                 'name':m,
+                 'msg':f"{str([msg['message'] for msg in mm if msg['name'] == m][0]):>}"
+                } for m in unique_res]
+        return sorted(res, key=lambda x:x['anz'], reverse=True)        
+
+    def _states_pareto(self, severity, states = []):
         rmessages = []
         if type(states) == str:
             states = [states]
         for state in states:
             rmessages += [msg for msg in self.states[state]._messages if msg['severity'] == severity]
-        unique_res = set([msg['name'] for msg in rmessages])
-        res = [{ 'anz': len([msg for msg in rmessages if msg['name'] == m]),
-                 'name':m,
-                 'msg':f"{str([msg['message'] for msg in rmessages if msg['name'] == m][0]):>}"
-                } for m in unique_res]
-        return sorted(res, key=lambda x:x['anz'], reverse=True)
+        return self._pareto(rmessages)
 
     def alarms_pareto(self, states):
-        return pd.DataFrame(self._pareto(800, states))
+        return pd.DataFrame(self._states_pareto(800, states))
 
     def warnings_pareto(self, states):
-        return pd.DataFrame(self._pareto(700, states))
+        return pd.DataFrame(self._states_pareto(700, states))
 
     @property
     def period(self):
-        return self._whole_period
+        return self._period
 
     def completed(self, limit_to = 10):
 

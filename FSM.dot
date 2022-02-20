@@ -23,6 +23,5 @@ digraph G {
     loadramp -> targetoperation [label="9047 Target load reached"]
     loadramp -> standstill [label="3226 Ignition off"]
     targetoperation [label="target-operation"]
-    targetoperation -> idle [label="1236 Generator CB opened"]
     targetoperation -> standstill [label="3226 Ignition off"]
 }
