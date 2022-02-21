@@ -120,7 +120,12 @@ class msgFSM:
             self._timer = pd.Timedelta(0)
             self.last_ts = None
             self._starts = []
+            self._loadramp = self._e['rP_Ramp_Set'] or 0.625 # %/sec
+            self._default_ramp_duration = int(100.0 / self._loadramp * 1e3)
             self.full_load_timestamp = None
+            print(f"Message - '9047 target load reached' {'found.' if self._target_load_message else 'not found.'}")
+            if not self._target_load_message:
+                print(f"load ramp assumed to {self._loadramp} %/sec based on {'rP_Ramp_Set Parameter' if self._e['rP_Ramp_Set'] else 'INNIO standard'}")
 
     def store(self):
         try:
@@ -250,7 +255,7 @@ class msgFSM:
 
             # Algorithm to switch from 'load-ramp to' 'target-operation'
             if self.current_state == 'load-ramp' and self.full_load_timestamp == None:  # direct bein Umschalten das Ende der Rampe berechnen
-                self.full_load_timestamp = int(msg['timestamp']) + int(100.0 / self._e['rP_Ramp_Set'] * 1e3)
+                self.full_load_timestamp = int(msg['timestamp']) + self._default_ramp_duration
 
         self._collect_data(actstate, msg)
     
