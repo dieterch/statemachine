@@ -181,7 +181,7 @@ class msgFSM:
         if not cycletime:
             return self._data
         else:
-            return self._load_data(p_timeCycle=cycletime, ts_from=tts_from, ts_to=tts_to)
+            return self._load_data(p_timeCycle=cycletime, ts_from=tts_from, ts_to=tts_to, p_slot=tts_from or 9999)
 
     def plot_ts(self, tts, left = -300, right = 150, cycletime=None, *args, **kwargs):
         lts_from = tts + left * 1e3
@@ -210,8 +210,11 @@ class msgFSM:
         duration = 0.0
         for k in list(self.states.keys())[1:-1]:
             dtt=rec[k]
-            ax.axvline(arrow.get(rec['starttime']).shift(seconds=duration).datetime, color="red", linestyle="--", label=f"{duration:4.1f}")
-            duration = duration + dtt
+            if dtt == dtt:
+                ax.axvline(arrow.get(rec['starttime']).shift(seconds=duration).datetime, color="red", linestyle="--", label=f"{duration:4.1f}")
+                duration = duration + dtt
+            else:
+                break
         ax.axvline(arrow.get(rec['starttime']).shift(seconds=duration).datetime, color="red", linestyle="--", label=f"{duration:4.1f}")
         r_summary = pd.DataFrame(rec[self.filter_times], dtype=np.float64).round(2).T
         plt.table(
@@ -223,17 +226,17 @@ class msgFSM:
             loc='lower right')
         return idf
 
-    def _plot(self, idf, ylim2=(0,2500), *args, **kwargs):
-        ax = idf[['datetime','Power_PowerAct']].plot(
+    def _plot(self, idf, ylim2=(0,5000), *args, **kwargs):
+        ax = idf[['datetime','Various_Values_SpeedAct']].plot(
         x='datetime',
-        y='Power_PowerAct',
+        y='Various_Values_SpeedAct',
         kind='line',
         grid=True, 
         *args, **kwargs)
 
-        ax2 = idf[['datetime','Various_Values_SpeedAct']].plot(
+        ax2 = idf[['datetime','Power_PowerAct']].plot(
         x='datetime',
-        y='Various_Values_SpeedAct',
+        y='Power_PowerAct',
         secondary_y = True,
         ax = ax,
         kind='line', 
