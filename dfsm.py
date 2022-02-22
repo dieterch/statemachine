@@ -108,6 +108,7 @@ class msgFSM:
                 self.__dict__ = pickle.load(handle)    
         else:
             self.load_messages(e, p_from, p_to, skip_days)
+            self.load_data(e, ['Various_Values_SpeedAct','Power_PowerAct'])
 
             self._target_load_message = any(self._messages['name'] == '9047')
             self.states = FSM.states
@@ -123,7 +124,7 @@ class msgFSM:
             self._loadramp = self._e['rP_Ramp_Set'] or 0.625 # %/sec
             self._default_ramp_duration = int(100.0 / self._loadramp * 1e3)
             self.full_load_timestamp = None
-            print(f"Message - '9047 target load reached' {'found.' if self._target_load_message else 'not found.'}")
+            print(f"{'Using' if self._target_load_message else 'Calculating'} '9047 target load reached' Message.")
             if not self._target_load_message:
                 print(f"load ramp assumed to {self._loadramp} %/sec based on {'rP_Ramp_Set Parameter' if self._e['rP_Ramp_Set'] else 'INNIO standard'}")
 
@@ -148,6 +149,16 @@ class msgFSM:
             self._messages = self._messages[self._messages['timestamp'] > int(arrow.get(self.first_message).shift(days=skip_days).timestamp()*1e3)]
         self.count_messages = self._messages.shape[0]
 
+    def load_data(self,e, data):
+        self._data = e.hist_data(
+            itemIds = e.get_dataItems(data),
+            p_from = arrow.get(self.first_message).to('Europe/Vienna'),
+            p_to = arrow.get(self.last_message).to('Europe/Vienna'),
+            timeCycle=30,
+            forceReload=False,
+            slot=99
+        )
+
     def save_messages(self, fn):
         with open(fn, 'w') as f:
             for index, msg in self._messages.iterrows():
@@ -157,7 +168,7 @@ class msgFSM:
                         f.write(f"{pf(msg['associatedValues'])}\n\n")
 
     def run(self):
-        for i,msg in tqdm(self._messages.iterrows(), total=self._messages.shape[0], ncols=120, mininterval=1, unit=' messages', desc="Scan Messages"):
+        for i,msg in tqdm(self._messages.iterrows(), total=self._messages.shape[0], ncols=80, mininterval=1, unit=' messages', desc="FSM"):
             self.send(msg)
          
     #1225 Service selector switch Off
