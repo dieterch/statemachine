@@ -110,8 +110,8 @@ class msgFSM:
         self._p_from = p_from
         self._p_to = p_to
         self.pfn = os.getcwd() + '/data/' + str(self._e._sn) + '_statemachine.pkl'
-        self.filter_times = ['start-preparation','starter','hochlauf','idle','synchronize','load-ramp']
-        self.filter_content = ['success','mode','cumstarttime'] + self.filter_times + ['target-operation']
+        self.filter_times = ['start-preparation','starter','hochlauf','idle','synchronize','load-ramp','cumstarttime']
+        self.filter_content = ['success','mode'] + self.filter_times + ['target-operation']
         self.filter_period = ['starttime','endtime']
 
         if frompickle and os.path.exists(self.pfn):
