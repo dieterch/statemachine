@@ -1,5 +1,8 @@
+from cProfile import label
 import arrow
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 from tqdm.auto import tqdm
 import os
 import pickle
@@ -12,7 +15,7 @@ class State:
         self._name = name
         self._transf = transferfun_list
         self._messages = []
-        self._duration = pd.Timedelta(0)
+        self._dt = pd.Timedelta(0)
     
     def send(self,msg):
         # store Warnings and Alarms vs. the states we are in.
@@ -23,11 +26,16 @@ class State:
                 return transf['new-state']
         return self._name
 
-    def add_duration(self, dt):
-        self._duration += dt
+    def _to_sec(self, time_object):
+        return float(time_object.seconds) + float(time_object.microseconds) / 1e6
 
-    def get_duration(self):
-        return self._duration
+    @property
+    def dt(self):
+        return self._to_sec(self._dt)
+
+    @dt.setter
+    def dt(self, value):
+        self._dt = value
 
 class FSM:
     initial_state = 'standstill'
@@ -102,13 +110,17 @@ class msgFSM:
         self._p_from = p_from
         self._p_to = p_to
         self.pfn = os.getcwd() + '/data/' + str(self._e._sn) + '_statemachine.pkl'
+        self.filter_times = ['start-preparation','starter','hochlauf','idle','synchronize','load-ramp']
+        self.filter_content = ['success','mode','cumstarttime'] + self.filter_times + ['target-operation']
+        self.filter_period = ['starttime','endtime']
 
         if frompickle and os.path.exists(self.pfn):
             with open(self.pfn, 'rb') as handle:
                 self.__dict__ = pickle.load(handle)    
         else:
             self.load_messages(e, p_from, p_to, skip_days)
-            self.load_data(e, ['Various_Values_SpeedAct','Power_PowerAct'])
+            self._data_spec = ['Various_Values_SpeedAct','Power_PowerAct']
+            self.load_data(timecycle = 30)
 
             self._target_load_message = any(self._messages['name'] == '9047')
             self.states = FSM.states
@@ -117,7 +129,7 @@ class msgFSM:
 
             # for initialize some values for collect_data.
             self._runlog = []
-            self._in_operation = 'off'
+            self._in_operation = '???'
             self._timer = pd.Timedelta(0)
             self.last_ts = None
             self._starts = []
@@ -149,15 +161,87 @@ class msgFSM:
             self._messages = self._messages[self._messages['timestamp'] > int(arrow.get(self.first_message).shift(days=skip_days).timestamp()*1e3)]
         self.count_messages = self._messages.shape[0]
 
-    def load_data(self,e, data):
-        self._data = e.hist_data(
-            itemIds = e.get_dataItems(data),
-            p_from = arrow.get(self.first_message).to('Europe/Vienna'),
-            p_to = arrow.get(self.last_message).to('Europe/Vienna'),
-            timeCycle=30,
-            forceReload=False,
-            slot=99
+    def _load_data(self, engine=None, p_data=None, ts_from=None, ts_to=None, p_timeCycle=None, p_forceReload=False, p_slot=99):
+        engine = engine or self._e
+        ts_from = ts_from or self.first_message 
+        ts_to = ts_to or self.last_message 
+        return engine.hist_data(
+            itemIds = engine.get_dataItems(p_data or self._data_spec),
+            p_from = arrow.get(ts_from).to('Europe/Vienna'),
+            p_to = arrow.get(ts_to).to('Europe/Vienna'),
+            timeCycle=p_timeCycle,
+            forceReload=p_forceReload,
+            slot=p_slot
         )
+
+    def load_data(self, timecycle):
+        self._data = self._load_data(p_timeCycle=timecycle)
+
+    def _ld(self, cycletime, tts_from=None, tts_to=None):
+        if not cycletime:
+            return self._data
+        else:
+            return self._load_data(p_timeCycle=cycletime, ts_from=tts_from, ts_to=tts_to)
+
+    def plot_ts(self, tts, left = -300, right = 150, cycletime=None, *args, **kwargs):
+        lts_from = tts + left * 1e3
+        lts_to = tts + right * 1e3
+        data = self._ld(cycletime, tts_from=lts_from, tts_to=lts_to)
+        step = data.iloc[1]['time'] - data.iloc[0]['time'] #in ms
+        ax, ax2, idf = self._plot(data[
+            (data['time'] >= lts_from) & 
+            (data['time'] <= lts_to)
+            ], *args, **kwargs)
+        return idf
+
+    def plot_cycle(self, rec, max_length=None, cycletime=None, *args, **kwargs):
+        t0 = int(arrow.get(rec['starttime']).timestamp() * 1e3 - 15*1e3)
+        t1 = int(arrow.get(rec['endtime']).timestamp() * 1e3)
+        if max_length:
+            if (t1 - t0) > max_length * 1e3:
+                t1 = int(t0 + max_length * 1e3)
+        data = self._ld(cycletime, tts_from=t0, tts_to=t1)
+        (ax, ax2, idf) = self._plot(
+            data[
+                (data['time'] >= t0) & 
+                (data['time'] <= t1)],        
+                *args, **kwargs
+            )
+        duration = 0.0
+        for k in list(self.states.keys())[1:-1]:
+            dtt=rec[k]
+            ax.axvline(arrow.get(rec['starttime']).shift(seconds=duration).datetime, color="red", linestyle="--", label=f"{duration:4.1f}")
+            duration = duration + dtt
+        ax.axvline(arrow.get(rec['starttime']).shift(seconds=duration).datetime, color="red", linestyle="--", label=f"{duration:4.1f}")
+        r_summary = pd.DataFrame(rec[self.filter_times], dtype=np.float64).round(2).T
+        plt.table(
+            cellText=r_summary.values, 
+            colWidths=[0.1]*len(r_summary.columns),
+            colLabels=r_summary.columns,
+            cellLoc='center', 
+            rowLoc='center',
+            loc='lower right')
+        return idf
+
+    def _plot(self, idf, ylim2=(0,2500), *args, **kwargs):
+        ax = idf[['datetime','Power_PowerAct']].plot(
+        x='datetime',
+        y='Power_PowerAct',
+        kind='line',
+        grid=True, 
+        *args, **kwargs)
+
+        ax2 = idf[['datetime','Various_Values_SpeedAct']].plot(
+        x='datetime',
+        y='Various_Values_SpeedAct',
+        secondary_y = True,
+        ax = ax,
+        kind='line', 
+        grid=True, 
+        *args, **kwargs)
+
+        ax2.set_ylim(ylim2)
+        return ax, ax2, idf
 
     def save_messages(self, fn):
         with open(fn, 'w') as f:
@@ -193,7 +277,7 @@ class msgFSM:
             self._starts.append({
                 'success': False,
                 'mode':self.act_service_selector,
-                'starttime': switch_point.round('S'),
+                'starttime': switch_point,
                 'endtime': pd.Timestamp(0),
                 'cumstarttime': pd.Timedelta(0),
                 'alarms': [],
@@ -216,7 +300,7 @@ class msgFSM:
         if self.current_state == 'standstill': #'mode-off'
         #if actstate == 'load-ramp': # übergang von loadramp to 'target-operation'
             if self._in_operation == 'on':
-                self._starts[-1]['endtime'] = switch_point.round('S')
+                self._starts[-1]['endtime'] = switch_point
             self._in_operation = 'off'
             self._timer = pd.Timedelta(0)
 
@@ -243,7 +327,7 @@ class msgFSM:
             d_ts = pd.Timedelta(switch_ts - self.last_ts) if self.last_ts else pd.Timedelta(0)
 
             # Summ all states durations and store the timestamp for next pereriod.
-            self.states[actstate].add_duration(d_ts)
+            self.states[actstate].dt = d_ts
             self.last_ts = switch_ts
 
             # state machine for service Selector Switch
