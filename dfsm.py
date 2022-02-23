@@ -46,11 +46,11 @@ class FSM:
             #     #{ 'trigger':'1227 Service selector switch Automatic', 'new-state':'mode-automatic'},
             #     ]),
             'standstill': State('standstill',[
-                { 'trigger':'1231 Request module on', 'new-state': 'start-preparation'},
-                #{ 'trigger':'1265 Demand gas leakage check gas train 1', 'new-state':'start-preparation'}
+                { 'trigger':'1231 Request module on', 'new-state': 'startpreparation'},
+                #{ 'trigger':'1265 Demand gas leakage check gas train 1', 'new-state':'startpreparation'}
                 #{ 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}                
                 ]),
-            'start-preparation': State('start-preparation',[
+            'startpreparation': State('startpreparation',[
                 { 'trigger':'1249 Starter on', 'new-state': 'starter'},
                 { 'trigger':'1232 Request module off', 'new-state': 'standstill'}
                 #{ 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
@@ -71,16 +71,16 @@ class FSM:
                 #{ 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
                 ]),
             'synchronize': State('synchronize',[
-                { 'trigger':'1235 Generator CB closed', 'new-state':'load-ramp'},                
+                { 'trigger':'1235 Generator CB closed', 'new-state':'loadramp'},                
                 { 'trigger':'3226 Ignition off', 'new-state':'standstill'}
                 #{ 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
                 ]),             
-            'load-ramp': State('load-ramp',[
-                { 'trigger':'9047 Target load reached', 'new-state':'target-operation'},
+            'loadramp': State('loadramp',[
+                { 'trigger':'9047 Target load reached', 'new-state':'targetoperation'},
                 { 'trigger':'3226 Ignition off', 'new-state':'standstill'}
                 #{ 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
                 ]),             
-            'target-operation': State('target-operation',[
+            'targetoperation': State('targetoperation',[
                 #{ 'trigger':'1236 Generator CB opened', 'new-state':'idle'},
                 { 'trigger':'3226 Ignition off', 'new-state':'standstill'}
                 ])       
@@ -111,8 +111,8 @@ class msgFSM:
         self._p_to = p_to
         self.pfn = self._e._fname + '_statemachine.pkl'
         self._pre_period = 15 #sec earlier data download Start before event.
-        self.filter_times = ['start-preparation','starter','hochlauf','idle','synchronize','load-ramp','cumstarttime']
-        self.filter_content = ['success','mode'] + self.filter_times + ['target-operation']
+        self.filter_times = ['startpreparation','starter','hochlauf','idle','synchronize','loadramp','cumstarttime']
+        self.filter_content = ['success','mode'] + self.filter_times + ['targetoperation']
         self.filter_period = ['starttime','endtime']
 
         if frompickle and os.path.exists(self.pfn):
@@ -279,7 +279,7 @@ class msgFSM:
             return float(time_object.seconds) + float(time_object.microseconds) / 1e6
 
         # Start Preparatio => the Engine ist starting
-        if self.current_state == 'start-preparation':
+        if self.current_state == 'startpreparation':
             # apends a new record to the Starts list.
             self._starts.append({
                 'success': False,
@@ -295,17 +295,17 @@ class msgFSM:
             self._timer = pd.Timedelta(0)
         elif self._in_operation == 'on': # and actstate != FSM.initial_state:
             self._timer = self._timer + duration
-            self._starts[-1][actstate] = _to_sec(duration) if actstate != 'target-operation' else duration.round('S')
-            if actstate != 'target-operation':
+            self._starts[-1][actstate] = _to_sec(duration) if actstate != 'targetoperation' else duration.round('S')
+            if actstate != 'targetoperation':
                 self._starts[-1]['cumstarttime'] = _to_sec(self._timer)
 
-        if self.current_state == 'target-operation':
+        if self.current_state == 'targetoperation':
             if self._in_operation == 'on':
                 self._starts[-1]['success'] = True   # wenn der Start bis hierhin kommt, ist er erfolgreich.
 
         # Ein Motorlauf(-versuch) is zu Ende. 
         if self.current_state == 'standstill': #'mode-off'
-        #if actstate == 'load-ramp': # übergang von loadramp to 'target-operation'
+        #if actstate == 'loadramp': # übergang von loadramp to 'targetoperation'
             if self._in_operation == 'on':
                 self._starts[-1]['endtime'] = switch_point
             self._in_operation = 'off'
@@ -350,15 +350,15 @@ class msgFSM:
             else: # berechne die Zeit bis Vollast
                 if self.full_load_timestamp == None or int(msg['timestamp']) < self.full_load_timestamp:
                     self.current_state = self.states[self.current_state].send(msg)
-                elif int(msg['timestamp']) >= self.full_load_timestamp: # now switch to 'target-operation'
+                elif int(msg['timestamp']) >= self.full_load_timestamp: # now switch to 'targetoperation'
                     dmsg = {'name':'9047', 'message':'Target load reached (calculated)','timestamp':self.full_load_timestamp,'severity':600}
                     self.current_state = self.states[self.current_state].send(dmsg)
                     self._collect_data(actstate, dmsg)
                     self.full_load_timestamp = None
                     actstate = self.current_state            
 
-                # Algorithm to switch from 'load-ramp to' 'target-operation'
-                if self.current_state == 'load-ramp' and self.full_load_timestamp == None:  # direct bein Umschalten das Ende der Rampe berechnen
+                # Algorithm to switch from 'loadramp to' 'targetoperation'
+                if self.current_state == 'loadramp' and self.full_load_timestamp == None:  # direct bein Umschalten das Ende der Rampe berechnen
                     self.full_load_timestamp = int(msg['timestamp']) + self._default_ramp_duration
 
             self._collect_data(actstate, msg)
