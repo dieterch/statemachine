@@ -120,7 +120,7 @@ class msgFSM:
         else:
             self.load_messages(e, p_from, p_to, skip_days)
             self._data_spec = ['Various_Values_SpeedAct','Power_PowerAct']
-            self.load_data(timecycle = 30)
+            #self.load_data(timecycle = 30)
 
             self._target_load_message = any(self._messages['name'] == '9047')
             self.states = FSM.states
@@ -184,8 +184,8 @@ class msgFSM:
             return self._load_data(p_timeCycle=cycletime, ts_from=tts_from, ts_to=tts_to, p_slot=tts_from or 9999)
 
     def plot_ts(self, tts, left = -300, right = 150, cycletime=None, *args, **kwargs):
-        lts_from = tts + left * 1e3
-        lts_to = tts + right * 1e3
+        lts_from = int(tts + left * 1e3)
+        lts_to = int(tts + right * 1e3)
         data = self._ld(cycletime, tts_from=lts_from, tts_to=lts_to)
         step = data.iloc[1]['time'] - data.iloc[0]['time'] #in ms
         ax, ax2, idf = self._plot(data[
@@ -193,6 +193,12 @@ class msgFSM:
             (data['time'] <= lts_to)
             ], *args, **kwargs)
         return idf
+
+    def get_period(self, ts0, ts1, cycletime=None, *args, **kwargs):
+        lts_from = int(ts0)
+        lts_to = int(ts1)
+        data = self._ld(cycletime, tts_from=lts_from, tts_to=lts_to)
+        return data
 
     def plot_cycle(self, rec, max_length=None, cycletime=None, *args, **kwargs):
         t0 = int(arrow.get(rec['starttime']).timestamp() * 1e3 - 15*1e3)
