@@ -111,7 +111,6 @@ class msgFSM:
         self._p_to = p_to
         self.pfn = self._e._fname + '_statemachine.pkl'
         self._pre_period = 15 #sec earlier data download Start before event.
-        #self.mfn = self._e._fname + '_messages.pkl'
         self.filter_times = ['start-preparation','starter','hochlauf','idle','synchronize','load-ramp','cumstarttime']
         self.filter_content = ['success','mode'] + self.filter_times + ['target-operation']
         self.filter_period = ['starttime','endtime']
@@ -153,6 +152,10 @@ class msgFSM:
         if os.path.exists(self.pfn):
             os.remove(self.pfn)
 
+    @property
+    def period(self):
+        return self._period
+
     ### messages handling
     def load_messages(self,e, p_from, p_to, skip_days):
         self._messages = e.get_messages(p_from, p_to)
@@ -164,6 +167,13 @@ class msgFSM:
             self._messages = self._messages[self._messages['timestamp'] > int(arrow.get(self.first_message).shift(days=skip_days).timestamp()*1e3)]
         self.count_messages = self._messages.shape[0]
 
+    def save_messages(self, fn):
+        with open(fn, 'w') as f:
+            for index, msg in self._messages.iterrows():
+                f.write(f"{index:>06} {msg['severity']} {msg['timestamp']} {pd.to_datetime(int(msg['timestamp'])*1e6).strftime('%d.%m.%Y %H:%M:%S')}  {msg['name']} {msg['message']}\n")
+                if 'associatedValues' in msg:
+                    if msg['associatedValues'] == msg['associatedValues']:  # if not NaN ...
+                        f.write(f"{pf(msg['associatedValues'])}\n\n")
 
     ### data handling
     def _load_data(self, engine=None, p_data=None, ts_from=None, ts_to=None, p_timeCycle=30, p_forceReload=False, p_slot=99):
@@ -217,11 +227,11 @@ class msgFSM:
         for k in list(self.states.keys())[1:-1]:
             dtt=rec[k]
             if dtt == dtt:
-                ax.axvline(arrow.get(rec['starttime']).shift(seconds=duration).datetime, color="red", linestyle=".", label=f"{duration:4.1f}")
+                ax.axvline(arrow.get(rec['starttime']).shift(seconds=duration).datetime, color="red", linestyle="dotted", label=f"{duration:4.1f}")
                 duration = duration + dtt
             else:
                 break
-        ax.axvline(arrow.get(rec['starttime']).shift(seconds=duration).datetime, color="red", linestyle=".", label=f"{duration:4.1f}")
+        ax.axvline(arrow.get(rec['starttime']).shift(seconds=duration).datetime, color="red", linestyle="dotted", label=f"{duration:4.1f}")
         r_summary = pd.DataFrame(rec[self.filter_times], dtype=np.float64).round(2).T
         plt.table(
             cellText=r_summary.values, 
@@ -251,18 +261,6 @@ class msgFSM:
 
         ax2.set_ylim(ylim2)
         return ax, ax2, idf
-
-    def save_messages(self, fn):
-        with open(fn, 'w') as f:
-            for index, msg in self._messages.iterrows():
-                f.write(f"{index:>06} {msg['severity']} {msg['timestamp']} {pd.to_datetime(int(msg['timestamp'])*1e6).strftime('%d.%m.%Y %H:%M:%S')}  {msg['name']} {msg['message']}\n")
-                if 'associatedValues' in msg:
-                    if msg['associatedValues'] == msg['associatedValues']:  # if not NaN ...
-                        f.write(f"{pf(msg['associatedValues'])}\n\n")
-
-    def run(self):
-        for i,msg in tqdm(self._messages.iterrows(), total=self._messages.shape[0], ncols=80, mininterval=1, unit=' messages', desc="FSM"):
-            self.send(msg)
          
     #1225 Service selector switch Off
     #1226 Service selector switch Manual
@@ -342,27 +340,30 @@ class msgFSM:
             # state machine for service Selector Switch
             self._fsm_Operating_Cycle(actstate, self.current_state, switch_ts, d_ts, msg)
 
-    def send(self, msg):
-        actstate = self.current_state
+    ### FSM Entry Point.
+    def run(self):
+        for i,msg in tqdm(self._messages.iterrows(), total=self._messages.shape[0], ncols=80, mininterval=1, unit=' messages', desc="FSM"):
+            actstate = self.current_state
 
-        if self._target_load_message:
-            self.current_state = self.states[self.current_state].send(msg)
-        else: # berechne die Zeit bis Vollast
-            if self.full_load_timestamp == None or int(msg['timestamp']) < self.full_load_timestamp:
+            if self._target_load_message:
                 self.current_state = self.states[self.current_state].send(msg)
-            elif int(msg['timestamp']) >= self.full_load_timestamp: # now switch to 'target-operation'
-                dmsg = {'name':'9047', 'message':'Target load reached (calculated)','timestamp':self.full_load_timestamp,'severity':600}
-                self.current_state = self.states[self.current_state].send(dmsg)
-                self._collect_data(actstate, dmsg)
-                self.full_load_timestamp = None
-                actstate = self.current_state            
+            else: # berechne die Zeit bis Vollast
+                if self.full_load_timestamp == None or int(msg['timestamp']) < self.full_load_timestamp:
+                    self.current_state = self.states[self.current_state].send(msg)
+                elif int(msg['timestamp']) >= self.full_load_timestamp: # now switch to 'target-operation'
+                    dmsg = {'name':'9047', 'message':'Target load reached (calculated)','timestamp':self.full_load_timestamp,'severity':600}
+                    self.current_state = self.states[self.current_state].send(dmsg)
+                    self._collect_data(actstate, dmsg)
+                    self.full_load_timestamp = None
+                    actstate = self.current_state            
 
-            # Algorithm to switch from 'load-ramp to' 'target-operation'
-            if self.current_state == 'load-ramp' and self.full_load_timestamp == None:  # direct bein Umschalten das Ende der Rampe berechnen
-                self.full_load_timestamp = int(msg['timestamp']) + self._default_ramp_duration
+                # Algorithm to switch from 'load-ramp to' 'target-operation'
+                if self.current_state == 'load-ramp' and self.full_load_timestamp == None:  # direct bein Umschalten das Ende der Rampe berechnen
+                    self.full_load_timestamp = int(msg['timestamp']) + self._default_ramp_duration
 
-        self._collect_data(actstate, msg)
+            self._collect_data(actstate, msg)
     
+    ### Prepare Results
     def _pareto(self, mm):
         unique_res = set([msg['name'] for msg in mm])
         res = [{ 'anz': len([msg for msg in mm if msg['name'] == m]),
@@ -384,10 +385,6 @@ class msgFSM:
 
     def warnings_pareto(self, states):
         return pd.DataFrame(self._states_pareto(700, states))
-
-    @property
-    def period(self):
-        return self._period
 
     def completed(self, limit_to = 10):
 
