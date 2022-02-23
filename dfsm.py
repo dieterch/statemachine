@@ -109,7 +109,9 @@ class msgFSM:
         self._e = e
         self._p_from = p_from
         self._p_to = p_to
-        self.pfn = os.getcwd() + '/data/' + str(self._e._sn) + '_statemachine.pkl'
+        self.pfn = self._e._fname + '_statemachine.pkl'
+        self._pre_period = 15 #sec earlier data download Start before event.
+        #self.mfn = self._e._fname + '_messages.pkl'
         self.filter_times = ['start-preparation','starter','hochlauf','idle','synchronize','load-ramp','cumstarttime']
         self.filter_content = ['success','mode'] + self.filter_times + ['target-operation']
         self.filter_period = ['starttime','endtime']
@@ -151,6 +153,7 @@ class msgFSM:
         if os.path.exists(self.pfn):
             os.remove(self.pfn)
 
+    ### messages handling
     def load_messages(self,e, p_from, p_to, skip_days):
         self._messages = e.get_messages(p_from, p_to)
         self.first_message = pd.Timestamp(self._messages.iloc[0]['timestamp']*1e6)
@@ -161,7 +164,9 @@ class msgFSM:
             self._messages = self._messages[self._messages['timestamp'] > int(arrow.get(self.first_message).shift(days=skip_days).timestamp()*1e3)]
         self.count_messages = self._messages.shape[0]
 
-    def _load_data(self, engine=None, p_data=None, ts_from=None, ts_to=None, p_timeCycle=None, p_forceReload=False, p_slot=99):
+
+    ### data handling
+    def _load_data(self, engine=None, p_data=None, ts_from=None, ts_to=None, p_timeCycle=30, p_forceReload=False, p_slot=99):
         engine = engine or self._e
         ts_from = ts_from or self.first_message 
         ts_to = ts_to or self.last_message 
@@ -174,19 +179,20 @@ class msgFSM:
             slot=p_slot
         )
 
-    def load_data(self, timecycle):
-        self._data = self._load_data(p_timeCycle=timecycle)
+    def load_data(self, cycletime, tts_from=None, tts_to=None):
+        return self._load_data(p_timeCycle=cycletime, ts_from=tts_from, ts_to=tts_to, p_slot=tts_from or 9999)
 
-    def _ld(self, cycletime, tts_from=None, tts_to=None):
-        if not cycletime:
-            return self._data
-        else:
-            return self._load_data(p_timeCycle=cycletime, ts_from=tts_from, ts_to=tts_to, p_slot=tts_from or 9999)
+    def get_period(self, ts0, ts1, cycletime=None, *args, **kwargs):
+        lts_from = int(ts0)
+        lts_to = int(ts1)
+        data = self.load_data(cycletime, tts_from=lts_from, tts_to=lts_to)
+        return data
 
+    ### plotting
     def plot_ts(self, tts, left = -300, right = 150, cycletime=None, *args, **kwargs):
         lts_from = int(tts + left * 1e3)
         lts_to = int(tts + right * 1e3)
-        data = self._ld(cycletime, tts_from=lts_from, tts_to=lts_to)
+        data = self.load_data(cycletime, tts_from=lts_from, tts_to=lts_to)
         step = data.iloc[1]['time'] - data.iloc[0]['time'] #in ms
         ax, ax2, idf = self._plot(data[
             (data['time'] >= lts_from) & 
@@ -194,19 +200,13 @@ class msgFSM:
             ], *args, **kwargs)
         return idf
 
-    def get_period(self, ts0, ts1, cycletime=None, *args, **kwargs):
-        lts_from = int(ts0)
-        lts_to = int(ts1)
-        data = self._ld(cycletime, tts_from=lts_from, tts_to=lts_to)
-        return data
-
     def plot_cycle(self, rec, max_length=None, cycletime=None, *args, **kwargs):
-        t0 = int(arrow.get(rec['starttime']).timestamp() * 1e3 - 15*1e3)
+        t0 = int(arrow.get(rec['starttime']).timestamp() * 1e3 - self._pre_period * 1e3)
         t1 = int(arrow.get(rec['endtime']).timestamp() * 1e3)
         if max_length:
             if (t1 - t0) > max_length * 1e3:
                 t1 = int(t0 + max_length * 1e3)
-        data = self._ld(cycletime, tts_from=t0, tts_to=t1)
+        data = self.load_data(cycletime, tts_from=t0, tts_to=t1)
         (ax, ax2, idf) = self._plot(
             data[
                 (data['time'] >= t0) & 
@@ -217,11 +217,11 @@ class msgFSM:
         for k in list(self.states.keys())[1:-1]:
             dtt=rec[k]
             if dtt == dtt:
-                ax.axvline(arrow.get(rec['starttime']).shift(seconds=duration).datetime, color="red", linestyle="--", label=f"{duration:4.1f}")
+                ax.axvline(arrow.get(rec['starttime']).shift(seconds=duration).datetime, color="red", linestyle=".", label=f"{duration:4.1f}")
                 duration = duration + dtt
             else:
                 break
-        ax.axvline(arrow.get(rec['starttime']).shift(seconds=duration).datetime, color="red", linestyle="--", label=f"{duration:4.1f}")
+        ax.axvline(arrow.get(rec['starttime']).shift(seconds=duration).datetime, color="red", linestyle=".", label=f"{duration:4.1f}")
         r_summary = pd.DataFrame(rec[self.filter_times], dtype=np.float64).round(2).T
         plt.table(
             cellText=r_summary.values, 
