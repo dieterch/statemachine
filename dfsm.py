@@ -111,6 +111,7 @@ class msgFSM:
         self._p_to = p_to
         self.pfn = self._e._fname + '_statemachine.pkl'
         self._pre_period = 15 #sec earlier data download Start before event.
+        self.vertical_lines_times = ['startpreparation','starter','hochlauf','idle','synchronize','loadramp']
         self.filter_times = ['startpreparation','starter','hochlauf','idle','synchronize','loadramp','cumstarttime']
         self.filter_content = ['success','mode'] + self.filter_times + ['targetoperation']
         self.filter_period = ['starttime','endtime']
@@ -224,7 +225,7 @@ class msgFSM:
                 *args, **kwargs
             )
         duration = 0.0
-        for k in list(self.states.keys())[1:-1]:
+        for k in rec[self.vertical_lines_times].index:
             dtt=rec[k]
             if dtt == dtt:
                 ax.axvline(arrow.get(rec['starttime']).shift(seconds=duration).datetime, color="red", linestyle="dotted", label=f"{duration:4.1f}")
@@ -233,13 +234,34 @@ class msgFSM:
                 break
         ax.axvline(arrow.get(rec['starttime']).shift(seconds=duration).datetime, color="red", linestyle="dotted", label=f"{duration:4.1f}")
         r_summary = pd.DataFrame(rec[self.filter_times], dtype=np.float64).round(2).T
+        """
+        available options for loc:
+        best
+        upper right
+        upper left
+        lower left
+        lower right
+        center left
+        center right
+        lower center
+        upper center
+        center
+        top right
+        top left
+        bottom left
+        bottom right
+        right
+        left
+        top
+        bottom
+        """
         plt.table(
             cellText=r_summary.values, 
             colWidths=[0.1]*len(r_summary.columns),
             colLabels=r_summary.columns,
             cellLoc='center', 
             rowLoc='center',
-            loc='lower right')
+            loc='upper left')
         return idf
 
     def _plot(self, idf, ylim2=(0,5000), *args, **kwargs):

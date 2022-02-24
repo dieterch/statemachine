@@ -170,7 +170,7 @@ class msgFSM:
             self._result = self._action( 
                 msg,  
                 [
-                    { 'key':'1259', 'mode':'start-preparation', 'fun':self.startprep},
+                    { 'key':'1259', 'mode':'startpreparation', 'fun':self.startprep},
                     { 'key':'1225', 'mode':'mode-off', 'fun':self.mode_off},
                     { 'key':'1227', 'mode':'mode-automatic', 'fun':self.mode_automatic},
                 ], 
@@ -185,7 +185,7 @@ class msgFSM:
             self._result = self._action( 
                 msg,  
                 [
-                    { 'key':'1259', 'mode':'start-preparation', 'fun':self.startprep},
+                    { 'key':'1259', 'mode':'startpreparation', 'fun':self.startprep},
                     { 'key':'1225', 'mode':'mode-off', 'fun':self.mode_off},
                     { 'key':'1226', 'mode':'mode-manual', 'fun':self.mode_manual},
                 ], 
