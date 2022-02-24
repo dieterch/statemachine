@@ -10,6 +10,7 @@ from pprint import pformat as pf
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
+# States und Transferfunktionen, Sammeln von Statebezogenen Daten ... 
 class State:
     def __init__(self, name, transferfun_list):
         self._name = name
@@ -37,6 +38,7 @@ class State:
     def dt(self, value):
         self._dt = value
 
+# dataClass FSM
 class FSM:
     initial_state = 'standstill'
     states = {
@@ -110,7 +112,7 @@ class msgFSM:
         self._p_from = p_from
         self._p_to = p_to
         self.pfn = self._e._fname + '_statemachine.pkl'
-        self._pre_period = 15 #sec earlier data download Start before event.
+        self._pre_period = 0 #sec earlier data download Start before event.
         self.vertical_lines_times = ['startpreparation','starter','hochlauf','idle','synchronize','loadramp']
         self.filter_times = ['startpreparation','starter','hochlauf','idle','synchronize','loadramp','cumstarttime']
         self.filter_content = ['success','mode'] + self.filter_times + ['targetoperation']
@@ -127,7 +129,7 @@ class msgFSM:
             self._target_load_message = any(self._messages['name'] == '9047')
             self.states = FSM.states
             self.current_state = FSM.initial_state
-            self.act_service_selector = ''
+            self.act_service_selector = '???'
 
             # for initialize some values for collect_data.
             self._runlog = []
@@ -142,22 +144,22 @@ class msgFSM:
             if not self._target_load_message:
                 print(f"load ramp assumed to {self._loadramp} %/sec based on {'rP_Ramp_Set Parameter' if self._e['rP_Ramp_Set'] else 'INNIO standard'}")
 
-    def store(self):
-        try:
-            with open(self.pfn, 'wb') as handle:
-                pickle.dump(self.__dict__, handle, protocol=4)
-        except:
-            pass
+    # def store(self):
+    #     try:
+    #         with open(self.pfn, 'wb') as handle:
+    #             pickle.dump(self.__dict__, handle, protocol=4)
+    #     except:
+    #         pass
 
-    def unstore(self):
-        if os.path.exists(self.pfn):
-            os.remove(self.pfn)
+    # def unstore(self):
+    #     if os.path.exists(self.pfn):
+    #         os.remove(self.pfn)
 
     @property
     def period(self):
         return self._period
 
-    ### messages handling
+    ## message handling
     def load_messages(self,e, p_from, p_to, skip_days):
         self._messages = e.get_messages(p_from, p_to)
         self.first_message = pd.Timestamp(self._messages.iloc[0]['timestamp']*1e6)
@@ -176,9 +178,11 @@ class msgFSM:
                     if msg['associatedValues'] == msg['associatedValues']:  # if not NaN ...
                         f.write(f"{pf(msg['associatedValues'])}\n\n")
 
-    ### data handling
-    def _load_data(self, engine=None, p_data=None, ts_from=None, ts_to=None, p_timeCycle=30, p_forceReload=False, p_slot=99):
+    ## data handling
+    def _load_data(self, engine=None, p_data=None, ts_from=None, ts_to=None, p_timeCycle=None, p_forceReload=False, p_slot=99):
         engine = engine or self._e
+        if not p_timeCycle:
+            p_timeCycle = 30
         ts_from = ts_from or self.first_message 
         ts_to = ts_to or self.last_message 
         return engine.hist_data(
@@ -193,24 +197,22 @@ class msgFSM:
     def load_data(self, cycletime, tts_from=None, tts_to=None):
         return self._load_data(p_timeCycle=cycletime, ts_from=tts_from, ts_to=tts_to, p_slot=tts_from or 9999)
 
-    def get_period(self, ts0, ts1, cycletime=None, *args, **kwargs):
+    def get_period_data(self, ts0, ts1, cycletime=None):
         lts_from = int(ts0)
         lts_to = int(ts1)
         data = self.load_data(cycletime, tts_from=lts_from, tts_to=lts_to)
+        data[(data['time'] >= lts_from) & 
+                (data['time'] <= lts_to)]
         return data
 
-    ### plotting
-    def plot_ts(self, tts, left = -300, right = 150, cycletime=None, *args, **kwargs):
-        lts_from = int(tts + left * 1e3)
-        lts_to = int(tts + right * 1e3)
-        data = self.load_data(cycletime, tts_from=lts_from, tts_to=lts_to)
-        step = data.iloc[1]['time'] - data.iloc[0]['time'] #in ms
-        ax, ax2, idf = self._plot(data[
-            (data['time'] >= lts_from) & 
-            (data['time'] <= lts_to)
-            ], *args, **kwargs)
-        return idf
+    def get_ts_data(self, tts, left = -300, right = 150, cycletime=None):
+        if not cycletime:
+            cycletime = 1 # default for get_ts_data
+        lts_from = int(tts + left)
+        lts_to = int(tts + right)
+        return self.get_period_data(lts_from, lts_to, cycletime)        
 
+    ## plotting
     def plot_cycle(self, rec, max_length=None, cycletime=None, *args, **kwargs):
         t0 = int(arrow.get(rec['starttime']).timestamp() * 1e3 - self._pre_period * 1e3)
         t1 = int(arrow.get(rec['endtime']).timestamp() * 1e3)
@@ -236,24 +238,9 @@ class msgFSM:
         r_summary = pd.DataFrame(rec[self.filter_times], dtype=np.float64).round(2).T
         """
         available options for loc:
-        best
-        upper right
-        upper left
-        lower left
-        lower right
-        center left
-        center right
-        lower center
-        upper center
-        center
-        top right
-        top left
-        bottom left
-        bottom right
-        right
-        left
-        top
-        bottom
+        best, upper right, upper left, lower left, lower right, center left, center right
+        lower center, upper center, center, top right,top left, bottom left, bottom right
+        right, left, top, bottom
         """
         plt.table(
             cellText=r_summary.values, 
@@ -264,17 +251,17 @@ class msgFSM:
             loc='upper left')
         return idf
 
-    def _plot(self, idf, ylim2=(0,5000), *args, **kwargs):
-        ax = idf[['datetime','Various_Values_SpeedAct']].plot(
-        x='datetime',
-        y='Various_Values_SpeedAct',
+    def _plot(self, idf, x12='datetime', y1 = ['Various_Values_SpeedAct'], y2 = ['Power_PowerAct'], ylim2=(0,5000), *args, **kwargs):
+        ax = idf[[x12] + y1].plot(
+        x=x12,
+        y=y1,
         kind='line',
         grid=True, 
         *args, **kwargs)
 
-        ax2 = idf[['datetime','Power_PowerAct']].plot(
-        x='datetime',
-        y='Power_PowerAct',
+        ax2 = idf[[x12] + y2].plot(
+        x=x12,
+        y=y2,
         secondary_y = True,
         ax = ax,
         kind='line', 
@@ -283,7 +270,8 @@ class msgFSM:
 
         ax2.set_ylim(ylim2)
         return ax, ax2, idf
-         
+
+    ### die Finite State Machine selbst:
     #1225 Service selector switch Off
     #1226 Service selector switch Manual
     #1227 Service selector switch Automatic
@@ -296,10 +284,8 @@ class msgFSM:
             self.act_service_selector = 'AUTO'
 
     def _fsm_Operating_Cycle(self, actstate, newstate, switch_point, duration, msg):
-
         def _to_sec(time_object):
             return float(time_object.seconds) + float(time_object.microseconds) / 1e6
-
         # Start Preparatio => the Engine ist starting
         if self.current_state == 'startpreparation':
             # apends a new record to the Starts list.
@@ -340,33 +326,31 @@ class msgFSM:
 
     def _collect_data(self, actstate, msg):
         self._fsm_Service_selector(msg)
-
         # collect alarms & warnings vs. Starts
         if self._in_operation == 'on':
             if msg['severity'] == 800:
                 self._starts[-1]['alarms'].append({'state':self.current_state, 'msg': msg})
             if msg['severity'] == 700:
                 self._starts[-1]['warnings'].append({'state':self.current_state, 'msg': msg})
-            
         if self.current_state != actstate:
             # Timestamp at the time of switching states
             switch_ts = pd.to_datetime(float(msg['timestamp'])*1e6)
-
             # How long have i been in actstate ?
             d_ts = pd.Timedelta(switch_ts - self.last_ts) if self.last_ts else pd.Timedelta(0)
-
             # Summ all states durations and store the timestamp for next pereriod.
             self.states[actstate].dt = d_ts
             self.last_ts = switch_ts
-
             # state machine for service Selector Switch
             self._fsm_Operating_Cycle(actstate, self.current_state, switch_ts, d_ts, msg)
 
-    ### FSM Entry Point.
+    ## FSM Entry Point.
     def run(self):
         for i,msg in tqdm(self._messages.iterrows(), total=self._messages.shape[0], ncols=80, mininterval=1, unit=' messages', desc="FSM"):
+
+            ## FSM Motorstart
             actstate = self.current_state
 
+            # Sonderbehandlung Ende der Lastrampe
             if self._target_load_message:
                 self.current_state = self.states[self.current_state].send(msg)
             else: # berechne die Zeit bis Vollast
@@ -382,10 +366,11 @@ class msgFSM:
                 # Algorithm to switch from 'loadramp to' 'targetoperation'
                 if self.current_state == 'loadramp' and self.full_load_timestamp == None:  # direct bein Umschalten das Ende der Rampe berechnen
                     self.full_load_timestamp = int(msg['timestamp']) + self._default_ramp_duration
-
+            # Datensammlung
             self._collect_data(actstate, msg)
     
-    ### Prepare Results
+
+    ## Resultate aus einem erfolgreichen FSM Lauf ermitteln.
     def _pareto(self, mm):
         unique_res = set([msg['name'] for msg in mm])
         res = [{ 'anz': len([msg for msg in mm if msg['name'] == m]),
@@ -408,46 +393,48 @@ class msgFSM:
     def warnings_pareto(self, states):
         return pd.DataFrame(self._states_pareto(700, states))
 
-    def completed(self, limit_to = 10):
 
-        def filter_messages(messages, severity):
-            fmessages = [msg for msg in messages if msg['severity'] == severity]
-            unique_messages = set([msg['name'] for msg in fmessages])
-            res_messages = [{ 'anz': len([msg for msg in fmessages if msg['name'] == m]), 
-                              'msg':f"{m} {[msg['message'] for msg in fmessages if msg['name'] == m][0]}"
-                            } for m in unique_messages]
-            return len(fmessages), sorted(res_messages, key=lambda x:x['anz'], reverse=True) 
+# alter Code
+#     def completed(self, limit_to = 10):
+
+#         def filter_messages(messages, severity):
+#             fmessages = [msg for msg in messages if msg['severity'] == severity]
+#             unique_messages = set([msg['name'] for msg in fmessages])
+#             res_messages = [{ 'anz': len([msg for msg in fmessages if msg['name'] == m]), 
+#                               'msg':f"{m} {[msg['message'] for msg in fmessages if msg['name'] == m][0]}"
+#                             } for m in unique_messages]
+#             return len(fmessages), sorted(res_messages, key=lambda x:x['anz'], reverse=True) 
         
-        print(f'''
+#         print(f'''
 
-*****************************************
-* Ergebnisse (c)2022 Dieter Chvatal     *
-*****************************************
-gesamter Zeitraum: {self._period.round('S')}
+# *****************************************
+# * Ergebnisse (c)2022 Dieter Chvatal     *
+# *****************************************
+# gesamter Zeitraum: {self._period.round('S')}
 
-''')
-        for state in self.states:
+# ''')
+#         for state in self.states:
 
-            alarms, alu = filter_messages(self.states[state]._messages, 800)
-            al = "".join([f"{line['anz']:3d} {line['msg']}\n" for line in alu[:limit_to]])
+#             alarms, alu = filter_messages(self.states[state]._messages, 800)
+#             al = "".join([f"{line['anz']:3d} {line['msg']}\n" for line in alu[:limit_to]])
 
-            warnings, wru = filter_messages(self.states[state]._messages, 700)
-            wn = "".join([f"{line['anz']:3d} {line['msg']}\n" for line in wru[:limit_to]])
+#             warnings, wru = filter_messages(self.states[state]._messages, 700)
+#             wn = "".join([f"{line['anz']:3d} {line['msg']}\n" for line in wru[:limit_to]])
 
-            print(
-f"""
-{state}:
-Dauer       : {str(self.states[state].get_duration().round('S')):>20}  
-Anteil      : {self.states[state].get_duration()/self._whole_period*100.0:20.2f}%
-Messages    : {len(self.states[state]._messages):20} 
-Alarms total: {alarms:20d}
-      unique: {len(alu):20d}
+#             print(
+# f"""
+# {state}:
+# Dauer       : {str(self.states[state].get_duration().round('S')):>20}  
+# Anteil      : {self.states[state].get_duration()/self._whole_period*100.0:20.2f}%
+# Messages    : {len(self.states[state]._messages):20} 
+# Alarms total: {alarms:20d}
+#       unique: {len(alu):20d}
 
-{al}
+# {al}
 
-Warnings total: {warnings:20d}
-        unique: {len(wru):20d}
+# Warnings total: {warnings:20d}
+#         unique: {len(wru):20d}
 
-{wn}
-""")
-        print('completed')
+# {wn}
+# """)
+#         print('completed')
