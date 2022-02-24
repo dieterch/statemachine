@@ -9,6 +9,7 @@ import pickle
 from pprint import pformat as pf
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
+from IPython.display import HTML, display
 
 # States und Transferfunktionen, Sammeln von Statebezogenen Daten ... 
 class State:
@@ -393,6 +394,38 @@ class msgFSM:
     def warnings_pareto(self, states):
         return pd.DataFrame(self._states_pareto(700, states))
 
+    def summary(self, res):
+        display(HTML(
+            f"""
+            <h2>{str(res['engine'])}</h2>
+            <br>
+            <table>
+                <thead>
+                    <tr>
+                        <td></td>
+                        <td>From</td>
+                        <td>To</td>
+                        <td>Days</td>
+                        <td>Target Load detection</td>
+                    </tr>
+                </thead>
+                <tr>
+                    <td>Interval</td>
+                    <td>{res['fsm'].first_message:%d.%m.%Y}</td>
+                    <td>{res['fsm'].last_message:%d.%m.%Y}</td>
+                    <td>{res['fsm'].period.days:5}</td>
+                    <td>Message '9047 target load reached' {'.' if any(res['fsm']._messages['name'] == '9047') else 'will be calculatd.'}
+            </td>
+                </tr>
+            </table>
+            """))
+        nsummary = []
+        for mode in ['???','OFF','MANUAL', 'AUTO']:
+            lstarts = res['result'][res['result']['mode'] == mode].shape[0]
+            successful_starts = res['result'][((res['result'].success) & (res['result']['mode'] == mode))].shape[0]
+            nsummary.append([lstarts, successful_starts,(successful_starts / lstarts) * 100.0 if lstarts != 0 else 0.0])
+        nsummary.append([res['result'].shape[0],res['result'][res['result'].success].shape[0],(res['result'][res['result'].success].shape[0] / res['result'].shape[0]) * 100.0])
+        display(HTML(pd.DataFrame(nsummary, index=['???','OFF','MANUAL', 'AUTO','ALL'],columns=['Starts','successful','%'], dtype=np.int64).to_html(escape=False)))
 
 # alter Code
 #     def completed(self, limit_to = 10):
