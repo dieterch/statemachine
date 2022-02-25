@@ -171,10 +171,14 @@ class msgFSM:
             self._messages = self._messages[self._messages['timestamp'] > int(arrow.get(self.first_message).shift(days=skip_days).timestamp()*1e3)]
         self.count_messages = self._messages.shape[0]
 
+    def msgtxt(self, msg, idx=0):
+        return f"{idx:>06} {msg['severity']} {msg['timestamp']} {pd.to_datetime(int(msg['timestamp'])*1e6).strftime('%d.%m.%Y %H:%M:%S')}  {msg['name']} {msg['message']}"
+
     def save_messages(self, fn):
         with open(fn, 'w') as f:
             for index, msg in self._messages.iterrows():
-                f.write(f"{index:>06} {msg['severity']} {msg['timestamp']} {pd.to_datetime(int(msg['timestamp'])*1e6).strftime('%d.%m.%Y %H:%M:%S')}  {msg['name']} {msg['message']}\n")
+                f.write(self.msgtxt(msg, index)+'\n')
+                #f.write(f"{index:>06} {msg['severity']} {msg['timestamp']} {pd.to_datetime(int(msg['timestamp'])*1e6).strftime('%d.%m.%Y %H:%M:%S')}  {msg['name']} {msg['message']}\n")
                 if 'associatedValues' in msg:
                     if msg['associatedValues'] == msg['associatedValues']:  # if not NaN ...
                         f.write(f"{pf(msg['associatedValues'])}\n\n")
@@ -212,6 +216,19 @@ class msgFSM:
         lts_from = int(tts + left)
         lts_to = int(tts + right)
         return self.get_period_data(lts_from, lts_to, cycletime)        
+
+    def get_cycle_data(self,rec, max_length=None, min_length=None, cycletime=None):
+        t0 = int(arrow.get(rec['starttime']).timestamp() * 1e3 - self._pre_period * 1e3)
+        t1 = int(arrow.get(rec['endtime']).timestamp() * 1e3)
+        if max_length:
+            if (t1 - t0) > max_length * 1e3:
+                t1 = int(t0 + max_length * 1e3)
+        if min_length:
+            if (t1 - t0) < min_length * 1e3:
+                t1 = int(t0 + min_length * 1e3)
+        data = self.load_data(cycletime, tts_from=t0, tts_to=t1)
+        data = data[(data['time'] >= t0) & (data['time'] <= t1)]
+        return data
 
     ## plotting
     def plot_cycle(self, rec, max_length=None, cycletime=None, *args, **kwargs):
