@@ -127,7 +127,8 @@ class msgFSM:
             self._data_spec = ['Various_Values_SpeedAct','Power_PowerAct']
             #self.load_data(timecycle = 30)
 
-            self._target_load_message = any(self._messages['name'] == '9047')
+            #self._target_load_message = any(self._messages['name'] == '9047')
+            self._target_load_message = False
             self.states = FSM.states
             self.current_state = FSM.initial_state
             self.act_service_selector = '???'
