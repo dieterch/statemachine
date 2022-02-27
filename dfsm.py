@@ -11,6 +11,9 @@ import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 from IPython.display import HTML, display
 
+
+#Various_Bits_CollAlarm
+
 # States und Transferfunktionen, Sammeln von Statebezogenen Daten ... 
 class State:
     def __init__(self, name, transferfun_list):
