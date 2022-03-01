@@ -119,10 +119,22 @@ class msgFSM:
         self._p_to = p_to
         self.pfn = self._e._fname + '_statemachine.pkl'
         self._pre_period = 0 #sec earlier data download Start before event.
-        self.vertical_lines_times = ['startpreparation','starter','hochlauf','idle','synchronize','loadramp']
-        self.filter_times = ['startpreparation','starter','hochlauf','idle','synchronize','loadramp','cumstarttime']
-        self.filter_content = ['success','mode'] + self.filter_times + ['targetoperation']
-        self.filter_period = ['starttime','endtime']
+
+        # Filters
+        self.filters = {
+            'vertical_lines_times': ['startpreparation','starter','hochlauf','idle','synchronize','loadramp'],
+            'filter_times': ['startpreparation','starter','hochlauf','idle','synchronize','loadramp','cumstarttime'],
+            'filter_content': ['success','mode','startpreparation','starter','hochlauf','idle','synchronize','loadramp','cumstarttime','targetoperation'],
+            'run2filter_content':['index','success','mode','startpreparation','starter','hochlauf','idle','synchronize','loadramp','cumstarttime','maxload','ramp','targetoperation'],
+            'filter_alarms_and_warnings':['count_alarms', 'count_warnings'],
+            'filter_period':['starttime','endtime']
+        }
+        #self.vertical_lines_times = ['startpreparation','starter','hochlauf','idle','synchronize','loadramp']
+        #self.filter_times = ['startpreparation','starter','hochlauf','idle','synchronize','loadramp','cumstarttime']
+        #self.filter_content = ['success','mode'] + self.filter_times + ['targetoperation']
+        #self.run2filter_content = ['index','success','mode'] + self.filter_times + ['index','maxload','ramp','targetoperation']
+        #self.filter_alarms_and_warnings = ['count_alarms', 'count_warnings']
+        #self.filter_period = ['starttime','endtime']
 
         if frompickle and os.path.exists(self.pfn):
             with open(self.pfn, 'rb') as handle:
@@ -154,6 +166,7 @@ class msgFSM:
             self._timer = pd.Timedelta(0)
             self.last_ts = None
             self._starts = []
+            self._starts_counter = 0
 
     def store(self):
         try:
@@ -255,7 +268,7 @@ class msgFSM:
                 *args, **kwargs
             )
         duration = 0.0
-        for k in rec[self.vertical_lines_times].index:
+        for k in rec[self.filters['vertical_lines_times']].index:
             dtt=rec[k]
             if dtt == dtt:
                 ax.axvline(arrow.get(rec['starttime']).shift(seconds=duration).datetime, color="red", linestyle="dotted", label=f"{duration:4.1f}")
@@ -263,7 +276,7 @@ class msgFSM:
             else:
                 break
         ax.axvline(arrow.get(rec['starttime']).shift(seconds=duration).datetime, color="red", linestyle="dotted", label=f"{duration:4.1f}")
-        r_summary = pd.DataFrame(rec[self.filter_times], dtype=np.float64).round(2).T
+        r_summary = pd.DataFrame(rec[self.filters['filter_times']], dtype=np.float64).round(2).T
         """
         available options for loc:
         best, upper right, upper left, lower left, lower right, center left, center right
@@ -318,6 +331,7 @@ class msgFSM:
         if self.current_state == 'startpreparation':
             # apends a new record to the Starts list.
             self._starts.append({
+                'index':self._starts_counter,
                 'success': False,
                 'mode':self.act_service_selector,
                 'starttime': switch_point,
@@ -326,6 +340,7 @@ class msgFSM:
                 'alarms': [],
                 'warnings': []
             })
+            self._starts_counter += 1 # index for next start
             # indicate a 
             self._in_operation = 'on'
             self._timer = pd.Timedelta(0)
@@ -401,94 +416,83 @@ class msgFSM:
 
 ###################
 # CODING IN WORK
-    def run2(self):
+    def run2(self, rda):
 
-        for ii, startversuch in enumerate(self._starts[:3]): # ! fürs implementieren begrenzt auf 3 !
-                data = self.get_cycle_data(startversuch, max_length=None, min_length=None, cycletime=1)
+        index_list = []
+        for n, startversuch in tqdm(rda.iterrows(), total=rda.shape[0], ncols=80, mininterval=1, unit=' starts', desc="FSM Run2"):
 
-                pl = self.detect_edge(data, 'Power_PowerAct', kind='left')
-                pr = self.detect_edge(data, 'Power_PowerAct', kind='right')
-                sl = self.detect_edge(data, 'Various_Values_SpeedAct', kind='left')
-                sr = self.detect_edge(data, 'Various_Values_SpeedAct', kind='right')
+                ii = startversuch['index']
+                index_list.append(ii)
 
-                self._starts[ii]['title'] = f"{self._e} ----- Start {ii} {startversuch['mode']} | {'SUCCESS' if startversuch['success'] else 'FAILED'} | {startversuch['starttime'].round('S')}"
+                if not 'maxload' in startversuch:
 
-                #ml = (data.iloc[-1]['time'] - data.iloc[0]['time']) // 1000
-                sv_lines = [v for v in startversuch[self.vertical_lines_times]]
+                    data = self.get_cycle_data(startversuch, max_length=None, min_length=None, cycletime=1)
 
-                start = startversuch['starttime'];
-                
-                #nsv_lines = [v for v in sv_lines if ((v==v) and (v <= ml)) ]
-                #lines=list(np.cumsum(nsv_lines))
-                #dmyplant2.add_lines(start, lines, ax, color='red', linestyle="--")
+                    pl = self.detect_edge(data, 'Power_PowerAct', kind='left')
+                    pr = self.detect_edge(data, 'Power_PowerAct', kind='right')
+                    sl = self.detect_edge(data, 'Various_Values_SpeedAct', kind='left')
+                    sr = self.detect_edge(data, 'Various_Values_SpeedAct', kind='right')
 
-                #dmyplant2.add_lines(sl.loc, [], ax, color='green', linestyle="-")
-                #dmyplant2.add_lines(sr.loc, [], ax, color='green', linestyle="-.")
-                #dmyplant2.add_lines(pl.loc, [], ax, color='blue', linestyle="-")
-                #dmyplant2.add_lines(pr.loc, [], ax, color='blue', linestyle="-.")
+                    self._starts[ii]['title'] = f"{self._e} ----- Start {ii} {startversuch['mode']} | {'SUCCESS' if startversuch['success'] else 'FAILED'} | {startversuch['starttime'].round('S')}"
+                    #sv_lines = {k:(startversuch[k] if k in startversuch else np.NaN) for k in self.filters['vertical_lines_times']]}
+                    sv_lines = [v for v in startversuch[self.filters['vertical_lines_times']]]
 
-                # lade die in run1 gesammelten Daten in ein DataFrame, ersetze NaN Werte mit 0
-                svdf = pd.DataFrame(sv_lines, index=self.vertical_lines_times, columns=['FSM']).fillna(0)
-                #svdf['RUN2'] = svdf['FSM']
-                #if svdf.at['hochlauf','FSM'] > 0.0:
-                #        svdf.at['hochlauf','RUN2'] = sl.loc.timestamp() - start.timestamp() - np.cumsum(svdf['RUN2'])['starter']
-                #        svdf.at['idle','RUN2'] = svdf.at['idle','FSM'] - (svdf.at['hochlauf','RUN2'] - svdf.at['hochlauf','FSM'])
-                if svdf.at['loadramp','FSM'] > 0.0:
-                        calc_loadramp = pl.loc.timestamp() - start.timestamp() - np.cumsum(svdf['RUN2'])['synchronize']
-                        svdf.at['loadramp','RUN2'] = calc_loadramp
+                    start = startversuch['starttime'];
+                    
+                    # lade die in run1 gesammelten Daten in ein DataFrame, ersetze NaN Werte mit 0
+                    backup = {}
+                    #svdf = pd.DataFrame.from_dict(sv_lines, orient='index', columns=['FSM']).fillna(0)
+                    svdf = pd.DataFrame(sv_lines, index=self.filters['vertical_lines_times'], columns=['FSM'], dtype=np.float64).fillna(0)
+                    svdf['RUN2'] = svdf['FSM']
 
-                        # collect run2 results.
-                        self._starts[ii]['backup'] = {'loadramp' : svdf.at['loadramp','FSM']} # alten Wert merken
-                        self._starts['loadramp'] = calc_loadramp
+                    # intentionally excluded - Dieter 1.3.2022
+                    #if svdf.at['hochlauf','FSM'] > 0.0:
+                    #        svdf.at['hochlauf','RUN2'] = sl.loc.timestamp() - start.timestamp() - np.cumsum(svdf['RUN2'])['starter']
+                    #        svdf.at['idle','RUN2'] = svdf.at['idle','FSM'] - (svdf.at['hochlauf','RUN2'] - svdf.at['hochlauf','FSM'])
+                    if svdf.at['loadramp','FSM'] > 0.0:
+                            calc_loadramp = pl.loc.timestamp() - start.timestamp() - np.cumsum(svdf['RUN2'])['synchronize']
+                            svdf.at['loadramp','RUN2'] = calc_loadramp
 
-                calc_maxload = pl.val
-                try:
-                    calc_ramp = (pl.val / self._e['Power_PowerNominal']) * 100 / calc_maxload
-                except DivisionByZero:
-                    calc_ramp = np.NaN
-                backup_cumstarttime = np.cumsum(svdf['FSM'])['loadramp']
-                calc_cumstarttime = np.cumsum(svdf['RUN2'])['loadramp']
-                svdf = pd.concat([
-                        svdf, 
-                        pd.DataFrame.from_dict(
-                                {       'maxload':['-',calc_maxload],
-                                        'ramp':['-',calc_ramp],
-                                        'cumstarttime':[backup_cumstarttime, calc_cumstarttime]
-                                }, 
-                                columns=['FSM','RUN2'],
-                                orient='index')]
-                        )
+                            # collect run2 results.
+                            backup['loadramp'] = svdf.at['loadramp','FSM'] # alten Wert merken
+                            self._starts[ii]['loadramp'] = calc_loadramp
 
-                # collect run2 results.
-                self._starts[ii]['maxload'] = calc_maxload
-                self._starts[ii]['ramp'] = calc_ramp
-                self._starts[ii]['backup'].update({
-                    'cumstarttime': backup_cumstarttime
-                })
-                self._starts[ii]['cumstarttime'] = calc_ramp
-                
-                #summary = pd.DataFrame(startversuch[fsm.filter_times], dtype=np.float64).round(2).T
-                #summary = pd.DataFrame(svdf['FSM']).round(1).T
-                #dmyplant2.add_table(summary, ax, loc='upper left')
-                #display(HTML(summary.to_html(escape=False)))
-                #display(HTML(svdf.round(2).T.to_html(escape=False)))
+                    calc_maxload = pl.val
+                    if calc_maxload > 0.0:
+                        calc_ramp = (calc_maxload / self._e['Power_PowerNominal']) * 100 / svdf.at['loadramp','RUN2']
+                    else:
+                        calc_ramp = np.NaN
+                    backup_cumstarttime = np.cumsum(svdf['FSM'])['loadramp']
+                    calc_cumstarttime = np.cumsum(svdf['RUN2'])['loadramp']
+                    svdf = pd.concat([
+                            svdf, 
+                            pd.DataFrame.from_dict(
+                                    {       'maxload':['-',calc_maxload],
+                                            'ramp':['-',calc_ramp],
+                                            'cumstarttime':[backup_cumstarttime, calc_cumstarttime]
+                                    }, 
+                                    columns=['FSM','RUN2'],
+                                    orient='index')]
+                            )
+                    display(HTML(svdf.round(2).T.to_html(escape=False)))
 
-                # for i, al in enumerate(startversuch['alarms']):
-                #         print(f"{al['state']:16} {self.msgtxt(al['msg'],i)}")
+                    # collect run2 results.
+                    self._starts[ii]['maxload'] = calc_maxload
+                    self._starts[ii]['ramp'] = calc_ramp
+                    backup['cumstarttime'] = backup_cumstarttime
+                    self._starts[ii]['cumstarttime'] = calc_cumstarttime
 
-                # for i, w in enumerate(startversuch['warnings']):
-                #         print(f"{w['state']:16} {self.msgtxt(w['msg'],i)}")
-                
-                #fsm.plot_cycle(startversuch, max_length=600, ylim=(0,2500), cycletime=1, style='.-', figsize=(10,6), 
-                #    title=f"{fsm._e} ----- Start {startversuch.name} {startversuch['mode']} | {'SUCCESS' if startversuch['success'] else 'FAILED'} | {startversuch['starttime'].round('S')}");
-                #plt.show();
-                return svdf
+                    self._starts[ii]['backup'] = backup
+                    self._starts[ii]['count_alarms'] = len(startversuch['alarms'])
+                    self._starts[ii]['count_warnings'] = len(startversuch['warnings'])
 
+        return pd.DataFrame([self._starts[s] for s in index_list])
 
 # END
 #################
     ## FSM Entry Point.
     def run1(self):
+        self._starts_counter = 0
         for i,msg in tqdm(self._messages.iterrows(), total=self._messages.shape[0], ncols=80, mininterval=1, unit=' messages', desc="FSM"):
 
             ## FSM Motorstart
