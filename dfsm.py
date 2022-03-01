@@ -1,4 +1,5 @@
 from cProfile import label
+from decimal import DivisionByZero
 import arrow
 import pandas as pd
 import numpy as np
@@ -8,6 +9,7 @@ import os
 import pickle
 from pprint import pformat as pf
 import warnings
+from collections import namedtuple
 warnings.simplefilter(action='ignore', category=FutureWarning)
 from IPython.display import HTML, display
 
@@ -130,8 +132,18 @@ class msgFSM:
             self._data_spec = ['Various_Values_SpeedAct','Power_PowerAct']
             #self.load_data(timecycle = 30)
 
+            # Es gibt zwar die message, sie ist aber nicht bei allen Motoren implementiert
+            # und wird zumindest in einem Fall (Forsa Hartmoor, M?) nicht 100% zuverlässig geloggt
+            # daher ist das schätzen und verfeinern in run2 zuverlässiger. 1.3.2033 - Dieter 
             #self._target_load_message = any(self._messages['name'] == '9047')
             self._target_load_message = False
+            self._loadramp = self._e['rP_Ramp_Set'] or 0.625 # %/sec
+            self._default_ramp_duration = int(100.0 / self._loadramp * 1e3)
+            self.full_load_timestamp = None
+            # print(f"{'Using' if self._target_load_message else 'Calculating'} '9047 target load reached' Message.")
+            # if not self._target_load_message:
+            #     print(f"load ramp assumed to {self._loadramp} %/sec based on {'rP_Ramp_Set Parameter' if self._e['rP_Ramp_Set'] else 'INNIO standard'}")
+
             self.states = FSM.states
             self.current_state = FSM.initial_state
             self.act_service_selector = '???'
@@ -142,23 +154,17 @@ class msgFSM:
             self._timer = pd.Timedelta(0)
             self.last_ts = None
             self._starts = []
-            self._loadramp = self._e['rP_Ramp_Set'] or 0.625 # %/sec
-            self._default_ramp_duration = int(100.0 / self._loadramp * 1e3)
-            self.full_load_timestamp = None
-            print(f"{'Using' if self._target_load_message else 'Calculating'} '9047 target load reached' Message.")
-            if not self._target_load_message:
-                print(f"load ramp assumed to {self._loadramp} %/sec based on {'rP_Ramp_Set Parameter' if self._e['rP_Ramp_Set'] else 'INNIO standard'}")
 
-    # def store(self):
-    #     try:
-    #         with open(self.pfn, 'wb') as handle:
-    #             pickle.dump(self.__dict__, handle, protocol=4)
-    #     except:
-    #         pass
+    def store(self):
+        try:
+            with open(self.pfn, 'wb') as handle:
+                pickle.dump(self.__dict__, handle, protocol=4)
+        except:
+            pass
 
-    # def unstore(self):
-    #     if os.path.exists(self.pfn):
-    #         os.remove(self.pfn)
+    def unstore(self):
+        if os.path.exists(self.pfn):
+            os.remove(self.pfn)
 
     @property
     def period(self):
@@ -365,8 +371,124 @@ class msgFSM:
             # state machine for service Selector Switch
             self._fsm_Operating_Cycle(actstate, self.current_state, switch_ts, d_ts, msg)
 
+    ## 2nd run - in detail data analysis
+    def detect_edge(self, data, name, kind='left'):
+        fac = {'left': -1.0, 'right': 1.0}
+        ldata = data[['datetime',name]]
+        x0 = ldata.iloc[0]['datetime'];
+        x1 = ldata.iloc[-1]['datetime'];
+        edge0 = data.loc[data[name].idxmax()]
+        
+        try:
+            if kind == 'left':
+                xfac = (x1 - x0) / (edge0.datetime - x0)
+            elif kind == 'right':
+                xfac = (x1 - x0) / (x1 - edge0.datetime)
+            else:
+                raise ValueError('detect_edge: unknown kind parameter value.')
+        except ZeroDivisionError:
+            xfac = 0.0
+        xfac = min(xfac, 5.0)
+        #print(f"###### | xfac: {xfac:5.2f} | kind: {kind:>5} | name: {name}")
+        lmax = ldata.loc[:,name].max() * xfac * 0.90
+
+        data[name+'_'+kind] = data[name]+(data['datetime'] - x0)*(fac[kind] * lmax)/(x1-x0) + lmax* (1-fac[kind])/2
+        
+        Point = namedtuple('edge',["loc", "val"])
+        edge = data.loc[data[name+'_'+kind].idxmax()]
+        return  Point(edge.datetime, ldata.at[edge.name,name])
+
+
+###################
+# CODING IN WORK
+    def run2(self):
+
+        for ii, startversuch in enumerate(self._starts[:3]): # ! fürs implementieren begrenzt auf 3 !
+                data = self.get_cycle_data(startversuch, max_length=None, min_length=None, cycletime=1)
+
+                pl = self.detect_edge(data, 'Power_PowerAct', kind='left')
+                pr = self.detect_edge(data, 'Power_PowerAct', kind='right')
+                sl = self.detect_edge(data, 'Various_Values_SpeedAct', kind='left')
+                sr = self.detect_edge(data, 'Various_Values_SpeedAct', kind='right')
+
+                self._starts[ii]['title'] = f"{self._e} ----- Start {ii} {startversuch['mode']} | {'SUCCESS' if startversuch['success'] else 'FAILED'} | {startversuch['starttime'].round('S')}"
+
+                #ml = (data.iloc[-1]['time'] - data.iloc[0]['time']) // 1000
+                sv_lines = [v for v in startversuch[self.vertical_lines_times]]
+
+                start = startversuch['starttime'];
+                
+                #nsv_lines = [v for v in sv_lines if ((v==v) and (v <= ml)) ]
+                #lines=list(np.cumsum(nsv_lines))
+                #dmyplant2.add_lines(start, lines, ax, color='red', linestyle="--")
+
+                #dmyplant2.add_lines(sl.loc, [], ax, color='green', linestyle="-")
+                #dmyplant2.add_lines(sr.loc, [], ax, color='green', linestyle="-.")
+                #dmyplant2.add_lines(pl.loc, [], ax, color='blue', linestyle="-")
+                #dmyplant2.add_lines(pr.loc, [], ax, color='blue', linestyle="-.")
+
+                # lade die in run1 gesammelten Daten in ein DataFrame, ersetze NaN Werte mit 0
+                svdf = pd.DataFrame(sv_lines, index=self.vertical_lines_times, columns=['FSM']).fillna(0)
+                #svdf['RUN2'] = svdf['FSM']
+                #if svdf.at['hochlauf','FSM'] > 0.0:
+                #        svdf.at['hochlauf','RUN2'] = sl.loc.timestamp() - start.timestamp() - np.cumsum(svdf['RUN2'])['starter']
+                #        svdf.at['idle','RUN2'] = svdf.at['idle','FSM'] - (svdf.at['hochlauf','RUN2'] - svdf.at['hochlauf','FSM'])
+                if svdf.at['loadramp','FSM'] > 0.0:
+                        calc_loadramp = pl.loc.timestamp() - start.timestamp() - np.cumsum(svdf['RUN2'])['synchronize']
+                        svdf.at['loadramp','RUN2'] = calc_loadramp
+
+                        # collect run2 results.
+                        self._starts[ii]['backup'] = {'loadramp' : svdf.at['loadramp','FSM']} # alten Wert merken
+                        self._starts['loadramp'] = calc_loadramp
+
+                calc_maxload = pl.val
+                try:
+                    calc_ramp = (pl.val / self._e['Power_PowerNominal']) * 100 / calc_maxload
+                except DivisionByZero:
+                    calc_ramp = np.NaN
+                backup_cumstarttime = np.cumsum(svdf['FSM'])['loadramp']
+                calc_cumstarttime = np.cumsum(svdf['RUN2'])['loadramp']
+                svdf = pd.concat([
+                        svdf, 
+                        pd.DataFrame.from_dict(
+                                {       'maxload':['-',calc_maxload],
+                                        'ramp':['-',calc_ramp],
+                                        'cumstarttime':[backup_cumstarttime, calc_cumstarttime]
+                                }, 
+                                columns=['FSM','RUN2'],
+                                orient='index')]
+                        )
+
+                # collect run2 results.
+                self._starts[ii]['maxload'] = calc_maxload
+                self._starts[ii]['ramp'] = calc_ramp
+                self._starts[ii]['backup'].update({
+                    'cumstarttime': backup_cumstarttime
+                })
+                self._starts[ii]['cumstarttime'] = calc_ramp
+                
+                #summary = pd.DataFrame(startversuch[fsm.filter_times], dtype=np.float64).round(2).T
+                #summary = pd.DataFrame(svdf['FSM']).round(1).T
+                #dmyplant2.add_table(summary, ax, loc='upper left')
+                #display(HTML(summary.to_html(escape=False)))
+                #display(HTML(svdf.round(2).T.to_html(escape=False)))
+
+                # for i, al in enumerate(startversuch['alarms']):
+                #         print(f"{al['state']:16} {self.msgtxt(al['msg'],i)}")
+
+                # for i, w in enumerate(startversuch['warnings']):
+                #         print(f"{w['state']:16} {self.msgtxt(w['msg'],i)}")
+                
+                #fsm.plot_cycle(startversuch, max_length=600, ylim=(0,2500), cycletime=1, style='.-', figsize=(10,6), 
+                #    title=f"{fsm._e} ----- Start {startversuch.name} {startversuch['mode']} | {'SUCCESS' if startversuch['success'] else 'FAILED'} | {startversuch['starttime'].round('S')}");
+                #plt.show();
+                return svdf
+
+
+# END
+#################
     ## FSM Entry Point.
-    def run(self):
+    def run1(self):
         for i,msg in tqdm(self._messages.iterrows(), total=self._messages.shape[0], ncols=80, mininterval=1, unit=' messages', desc="FSM"):
 
             ## FSM Motorstart
@@ -391,7 +513,6 @@ class msgFSM:
             # Datensammlung
             self._collect_data(actstate, msg)
     
-
     ## Resultate aus einem erfolgreichen FSM Lauf ermitteln.
     def _pareto(self, mm):
         unique_res = set([msg['name'] for msg in mm])
@@ -427,7 +548,6 @@ class msgFSM:
                         <td>From</td>
                         <td>To</td>
                         <td>Days</td>
-                        <td>Target Load detection</td>
                     </tr>
                 </thead>
                 <tr>
@@ -435,7 +555,6 @@ class msgFSM:
                     <td>{res['fsm'].first_message:%d.%m.%Y}</td>
                     <td>{res['fsm'].last_message:%d.%m.%Y}</td>
                     <td>{res['fsm'].period.days:5}</td>
-                    <td>Message '9047 target load reached' {'.' if any(res['fsm']._messages['name'] == '9047') else 'will be calculatd.'}
             </td>
                 </tr>
             </table>
