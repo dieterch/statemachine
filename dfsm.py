@@ -125,7 +125,7 @@ class msgFSM:
             'vertical_lines_times': ['startpreparation','starter','hochlauf','idle','synchronize','loadramp'],
             'filter_times': ['startpreparation','starter','hochlauf','idle','synchronize','loadramp','cumstarttime'],
             'filter_content': ['success','mode','startpreparation','starter','hochlauf','idle','synchronize','loadramp','cumstarttime','targetoperation'],
-            'run2filter_content':['index','success','mode','startpreparation','starter','hochlauf','idle','synchronize','loadramp','cumstarttime','maxload','ramp','targetoperation'],
+            'run2filter_content':['index','success','mode','startpreparation','starter','hochlauf','idle','synchronize','loadramp','cumstarttime','maxload','ramprate','targetoperation'],
             'filter_alarms_and_warnings':['count_alarms', 'count_warnings'],
             'filter_period':['starttime','endtime']
         }
@@ -207,7 +207,7 @@ class msgFSM:
                         f.write(f"{pf(msg['associatedValues'])}\n\n")
 
     ## data handling
-    def _load_data(self, engine=None, p_data=None, ts_from=None, ts_to=None, p_timeCycle=None, p_forceReload=False, p_slot=99):
+    def _load_data(self, engine=None, p_data=None, ts_from=None, ts_to=None, p_timeCycle=None, p_forceReload=False, p_slot=99, silent=False):
         engine = engine or self._e
         if not p_timeCycle:
             p_timeCycle = 30
@@ -219,11 +219,12 @@ class msgFSM:
             p_to = arrow.get(ts_to).to('Europe/Vienna'),
             timeCycle=p_timeCycle,
             forceReload=p_forceReload,
-            slot=p_slot
+            slot=p_slot,
+            silent=silent
         )
 
-    def load_data(self, cycletime, tts_from=None, tts_to=None):
-        return self._load_data(p_timeCycle=cycletime, ts_from=tts_from, ts_to=tts_to, p_slot=tts_from or 9999)
+    def load_data(self, cycletime, tts_from=None, tts_to=None, silent=False):
+        return self._load_data(p_timeCycle=cycletime, ts_from=tts_from, ts_to=tts_to, p_slot=tts_from or 9999, silent=silent)
 
     def get_period_data(self, ts0, ts1, cycletime=None):
         lts_from = int(ts0)
@@ -240,7 +241,7 @@ class msgFSM:
         lts_to = int(tts + right)
         return self.get_period_data(lts_from, lts_to, cycletime)        
 
-    def get_cycle_data(self,rec, max_length=None, min_length=None, cycletime=None):
+    def get_cycle_data(self,rec, max_length=None, min_length=None, cycletime=None, silent=False):
         t0 = int(arrow.get(rec['starttime']).timestamp() * 1e3 - self._pre_period * 1e3)
         t1 = int(arrow.get(rec['endtime']).timestamp() * 1e3)
         if max_length:
@@ -249,7 +250,7 @@ class msgFSM:
         if min_length:
             if (t1 - t0) < min_length * 1e3:
                 t1 = int(t0 + min_length * 1e3)
-        data = self.load_data(cycletime, tts_from=t0, tts_to=t1)
+        data = self.load_data(cycletime, tts_from=t0, tts_to=t1, silent=silent)
         data = data[(data['time'] >= t0) & (data['time'] <= t1)]
         return data
 
@@ -426,7 +427,7 @@ class msgFSM:
 
                 if not 'maxload' in startversuch:
 
-                    data = self.get_cycle_data(startversuch, max_length=None, min_length=None, cycletime=1)
+                    data = self.get_cycle_data(startversuch, max_length=None, min_length=None, cycletime=1, silent=True)
 
                     pl = self.detect_edge(data, 'Power_PowerAct', kind='left')
                     pr = self.detect_edge(data, 'Power_PowerAct', kind='right')
@@ -468,17 +469,17 @@ class msgFSM:
                             svdf, 
                             pd.DataFrame.from_dict(
                                     {       'maxload':['-',calc_maxload],
-                                            'ramp':['-',calc_ramp],
+                                            'ramprate':['-',calc_ramp],
                                             'cumstarttime':[backup_cumstarttime, calc_cumstarttime]
                                     }, 
                                     columns=['FSM','RUN2'],
                                     orient='index')]
                             )
-                    display(HTML(svdf.round(2).T.to_html(escape=False)))
+                    #display(HTML(svdf.round(2).T.to_html(escape=False)))
 
                     # collect run2 results.
                     self._starts[ii]['maxload'] = calc_maxload
-                    self._starts[ii]['ramp'] = calc_ramp
+                    self._starts[ii]['ramprate'] = calc_ramp
                     backup['cumstarttime'] = backup_cumstarttime
                     self._starts[ii]['cumstarttime'] = calc_cumstarttime
 
