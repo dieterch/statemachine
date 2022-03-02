@@ -172,8 +172,7 @@ class msgFSM:
                 #self.__dict__ = pickle.load(handle)
 
     def store(self):
-        if os.path.exists(self.pfn):
-            os.remove(self.pfn)
+        self.unstore()
         with open(self.pfn, 'wb') as handle:
             pickle.dump(self._starts, handle, protocol=4)
             #pickle.dump(self.__dict__, handle, protocol=4)
@@ -418,7 +417,7 @@ class msgFSM:
             edge = data.loc[data[name+'_'+kind].idxmax()]
         except Exception as err:
             logging.error(str(err))
-            edge = data.iloc[0]
+            edge = data.iloc[-1]
         return  Point(edge.datetime, ldata.at[edge.name,name])
 
 
@@ -506,6 +505,7 @@ class msgFSM:
     ## FSM Entry Point.
     def run1(self, enforce=False):
         if len(self._starts) == 0 or enforce:
+            self._starts = []
             self._starts_counter = 0
             for i,msg in tqdm(self._messages.iterrows(), total=self._messages.shape[0], ncols=80, mininterval=1, unit=' messages', desc="FSM"):
 
