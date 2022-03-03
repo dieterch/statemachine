@@ -10,6 +10,7 @@ import pickle
 from pprint import pformat as pf
 from collections import namedtuple
 import logging
+import dmyplant2
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 from IPython.display import HTML, display
@@ -258,63 +259,77 @@ class msgFSM:
         return data
 
     ## plotting
-    # def plot_cycle(self, rec, max_length=None, cycletime=None, *args, **kwargs):
-    #     t0 = int(arrow.get(rec['starttime']).timestamp() * 1000 - self._pre_period * 1000)
-    #     t1 = int(arrow.get(rec['endtime']).timestamp() * 1000 + self._post_period * 1000)
-    #     if max_length:
-    #         if (t1 - t0) > max_length * 1e3:
-    #             t1 = int(t0 + max_length * 1e3)
-    #     data = self.load_data(cycletime, tts_from=t0, tts_to=t1)
-    #     (ax, ax2, idf) = self._plot(
-    #         data[
-    #             (data['time'] >= t0) & 
-    #             (data['time'] <= t1)],        
-    #             *args, **kwargs
-    #         )
-    #     duration = 0.0
-    #     for k in rec[self.filters['vertical_lines_times']].index:
-    #         dtt=rec[k]
-    #         if dtt == dtt:
-    #             ax.axvline(arrow.get(rec['starttime']).shift(seconds=duration).datetime, color="red", linestyle="dotted", label=f"{duration:4.1f}")
-    #             duration = duration + dtt
-    #         else:
-    #             break
-    #     ax.axvline(arrow.get(rec['starttime']).shift(seconds=duration).datetime, color="red", linestyle="dotted", label=f"{duration:4.1f}")
-    #     r_summary = pd.DataFrame(rec[self.filters['filter_times']], dtype=np.float64).round(2).T
-    #     """
-    #     available options for loc:
-    #     best, upper right, upper left, lower left, lower right, center left, center right
-    #     lower center, upper center, center, top right,top left, bottom left, bottom right
-    #     right, left, top, bottom
-    #     """
-    #     plt.table(
-    #         cellText=r_summary.values, 
-    #         colWidths=[0.1]*len(r_summary.columns),
-    #         colLabels=r_summary.columns,
-    #         cellLoc='center', 
-    #         rowLoc='center',
-    #         loc='upper left')
-    #     return idf
+    def states_lines(self, startversuch):
+        """pd.Timestamp positions of detected state Changes
+        including start-event
 
-    def _plot(self, idf, x12='datetime', y1 = ['Various_Values_SpeedAct'], y2 = ['Power_PowerAct'], ylim2=(0,5000), *args, **kwargs):
-        ax = idf[[x12] + y1].plot(
-        x=x12,
-        y=y1,
-        kind='line',
-        grid=True, 
-        *args, **kwargs)
+        Args:
+            startversuch (self._starts[x]): the selected starts record.
 
-        ax2 = idf[[x12] + y2].plot(
-        x=x12,
-        y=y2,
-        secondary_y = True,
-        ax = ax,
-        kind='line', 
-        grid=True, 
-        *args, **kwargs)
+        Returns:
+            list: list of pd.Timestamps, ready to be passed into add_bokeh_vlinees
+        """
+        sv_lines = [v for v in startversuch[self.filters['vertical_lines_times']] if v==v]
+        start = startversuch['starttime']; lines=list(np.cumsum(sv_lines)); 
+        return [start + pd.Timedelta(value=v,unit='sec') for v in [0] + lines]
 
-        ax2.set_ylim(ylim2)
-        return ax, ax2, idf
+    def plot_cycle(self, rec, max_length=None, cycletime=None, *args, **kwargs):
+        t0 = int(arrow.get(rec['starttime']).timestamp() * 1000 - self._pre_period * 1000)
+        t1 = int(arrow.get(rec['endtime']).timestamp() * 1000 + self._post_period * 1000)
+        if max_length:
+            if (t1 - t0) > max_length * 1e3:
+                t1 = int(t0 + max_length * 1e3)
+        data = self.load_data(cycletime, tts_from=t0, tts_to=t1)
+        (ax, ax2, idf) = dmyplant2._plot(
+            data[
+                (data['time'] >= t0) & 
+                (data['time'] <= t1)],        
+                *args, **kwargs
+            )
+        duration = 0.0
+        for k in rec[self.filters['vertical_lines_times']].index:
+            dtt=rec[k]
+            if dtt == dtt:
+                ax.axvline(arrow.get(rec['starttime']).shift(seconds=duration).datetime, color="red", linestyle="dotted", label=f"{duration:4.1f}")
+                duration = duration + dtt
+            else:
+                break
+        ax.axvline(arrow.get(rec['starttime']).shift(seconds=duration).datetime, color="red", linestyle="dotted", label=f"{duration:4.1f}")
+        r_summary = pd.DataFrame(rec[self.filters['filter_times']], dtype=np.float64).round(2).T
+        """
+        available options for loc:
+        best, upper right, upper left, lower left, lower right, center left, center right
+        lower center, upper center, center, top right,top left, bottom left, bottom right
+        right, left, top, bottom
+        """
+        plt.table(
+            cellText=r_summary.values, 
+            colWidths=[0.1]*len(r_summary.columns),
+            colLabels=r_summary.columns,
+            cellLoc='center', 
+            rowLoc='center',
+            loc='upper left')
+        return idf
+
+    # def _plot(self, idf, x12='datetime', y1 = ['Various_Values_SpeedAct'], y2 = ['Power_PowerAct'], ylim2=(0,5000), *args, **kwargs):
+    #     ax = idf[[x12] + y1].plot(
+    #     x=x12,
+    #     y=y1,
+    #     kind='line',
+    #     grid=True, 
+    #     *args, **kwargs)
+
+    #     ax2 = idf[[x12] + y2].plot(
+    #     x=x12,
+    #     y=y2,
+    #     secondary_y = True,
+    #     ax = ax,
+    #     kind='line', 
+    #     grid=True, 
+    #     *args, **kwargs)
+
+    #     ax2.set_ylim(ylim2)
+    #     return ax, ax2, idf
 
     ### die Finite State Machine selbst:
     #1225 Service selector switch Off
