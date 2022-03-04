@@ -548,6 +548,30 @@ class msgFSM:
                 self._collect_data(actstate, msg)
     
     ## Resultate aus einem erfolgreichen FSM Lauf ermitteln.
+    def disp_alarms(self, startversuch):
+        ald = []
+        for al in startversuch['alarms']:
+                ald.append({
+                        'state':al['state'],'severity':al['msg']['severity'],'Number':al['msg']['name'],
+                        'date':pd.to_datetime(int(al['msg']['timestamp'])*1e6).strftime('%d.%m.%Y %H:%M:%S'),
+                        'message':al['msg']['message']
+                })
+        aldf = pd.DataFrame(ald)
+        if not aldf.empty:
+                display(HTML('<h3>'+ aldf.to_html(escape=False, index=False) + '</h3>'))
+
+    def disp_warnings(self, startversuch):
+        wad = []
+        for wd in startversuch['warnings']:
+                wad.append({
+                        'state':wd['state'],'severity':wd['msg']['severity'],'Number':wd['msg']['name'],
+                        'date':pd.to_datetime(int(wd['msg']['timestamp'])*1e6).strftime('%d.%m.%Y %H:%M:%S'),
+                        'message':wd['msg']['message']
+                })
+        wdf = pd.DataFrame(wad)
+        if not wdf.empty:
+                display(HTML('<h3>'+ wdf.to_html(escape=False, index=False) + '</h3>'))                
+
     def _pareto(self, mm):
         unique_res = set([msg['name'] for msg in mm])
         res = [{ 'anz': len([msg for msg in mm if msg['name'] == m]),
