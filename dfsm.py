@@ -570,10 +570,14 @@ class msgFSM:
     def warnings_pareto(self, states):
         return pd.DataFrame(self._states_pareto(700, states))
 
-    def summary(self, res):
+    @property
+    def result(self):
+        return pd.DataFrame(self._starts)
+
+    def summary(self):
         display(HTML(
             f"""
-            <h2>{str(res['engine'])}</h2>
+            <h2>{str(self._e)}</h2>
             <br>
             <table>
                 <thead>
@@ -586,20 +590,52 @@ class msgFSM:
                 </thead>
                 <tr>
                     <td>Interval</td>
-                    <td>{res['fsm'].first_message:%d.%m.%Y}</td>
-                    <td>{res['fsm'].last_message:%d.%m.%Y}</td>
-                    <td>{res['fsm'].period.days:5}</td>
+                    <td>{self.first_message:%d.%m.%Y}</td>
+                    <td>{self.last_message:%d.%m.%Y}</td>
+                    <td>{self.period.days:5}</td>
             </td>
                 </tr>
             </table>
             """))
         nsummary = []
+        res = self.result
         for mode in ['???','OFF','MANUAL', 'AUTO']:
-            lstarts = res['result'][res['result']['mode'] == mode].shape[0]
-            successful_starts = res['result'][((res['result'].success) & (res['result']['mode'] == mode))].shape[0]
+            lstarts = res[res['mode'] == mode].shape[0]
+            successful_starts = res[((res.success) & (res['mode'] == mode))].shape[0]
             nsummary.append([lstarts, successful_starts,(successful_starts / lstarts) * 100.0 if lstarts != 0 else 0.0])
-        nsummary.append([res['result'].shape[0],res['result'][res['result'].success].shape[0],(res['result'][res['result'].success].shape[0] / res['result'].shape[0]) * 100.0])
+        nsummary.append([res.shape[0],res[res.success].shape[0],(res[res.success].shape[0] / res.shape[0]) * 100.0])
         display(HTML(pd.DataFrame(nsummary, index=['???','OFF','MANUAL', 'AUTO','ALL'],columns=['Starts','successful','%'], dtype=np.int64).to_html(escape=False)))
+
+    def summary_out(self):
+        fsum = f"""
+            <table>
+                <thead>
+                    <tr>
+                        <td></td>
+                        <td>From</td>
+                        <td>To</td>
+                        <td>Days</td>
+                    </tr>
+                </thead>
+                <tr>
+                    <td>Interval</td>
+                    <td>{self.first_message:%d.%m.%Y}</td>
+                    <td>{self.last_message:%d.%m.%Y}</td>
+                    <td>{self.period.days:5}</td>
+            </td>
+                </tr>
+            </table>
+            <br>
+            """
+        nsummary = []
+        res = self.result
+        for mode in ['???','OFF','MANUAL', 'AUTO']:
+            lstarts = res[res['mode'] == mode].shape[0]
+            successful_starts = res[((res.success) & (res['mode'] == mode))].shape[0]
+            nsummary.append([lstarts, successful_starts,(successful_starts / lstarts) * 100.0 if lstarts != 0 else 0.0])
+        nsummary.append([res.shape[0],res[res.success].shape[0],(res[res.success].shape[0] / res.shape[0]) * 100.0])
+        display(HTML(fsum + pd.DataFrame(nsummary, index=['???','OFF','MANUAL', 'AUTO','ALL'],columns=['Starts','successful','%'], dtype=np.int64).to_html(escape=False)))
+
 
 # alter Code
 #     def completed(self, limit_to = 10):
