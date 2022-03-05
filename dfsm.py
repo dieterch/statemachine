@@ -1,5 +1,6 @@
 from cProfile import label
 from decimal import DivisionByZero
+from token import RIGHTSHIFT
 import arrow
 import pandas as pd
 import numpy as np
@@ -127,6 +128,7 @@ class msgFSM:
         self.filters = {
             'vertical_lines_times': ['startpreparation','starter','hochlauf','idle','synchronize','loadramp'],
             'filter_times': ['startpreparation','starter','hochlauf','idle','synchronize','loadramp','cumstarttime'],
+            'run2filter_times': ['startpreparation','starter','hochlauf','idle','synchronize','loadramp','cumstarttime','maxload','ramprate','targetoperation'],
             'filter_content': ['success','mode','startpreparation','starter','hochlauf','idle','synchronize','loadramp','cumstarttime','targetoperation'],
             'run2filter_content':['index','success','mode','startpreparation','starter','hochlauf','idle','synchronize','loadramp','cumstarttime','maxload','ramprate','targetoperation'],
             'filter_alarms_and_warnings':['count_alarms', 'count_warnings'],
@@ -245,7 +247,23 @@ class msgFSM:
         lts_to = int(tts + right)
         return self.get_period_data(lts_from, lts_to, cycletime, p_data=p_data)        
 
-    def get_cycle_data(self,rec, max_length=None, min_length=None, cycletime=None, silent=False, p_data=None):
+    def _resample_data(self, data, startversuch):
+        # bis 15' nach Start 1" samples
+        d1 = startversuch['starttime'] + pd.Timedelta(value=15, unit='min')
+        # bis 15' vor Ende 1" samples
+        d3 = startversuch['endtime'] - pd.Timedelta(value=15, unit='min')
+        
+        if (d3 - d1) > pd.Timedelta(value=5,unit='min'):
+            # dazwischen auf 10' 
+            data1 = data[data.datetime <= d1]
+            data2 = data[(data.datetime >= d1) & (data.datetime <= d3)]
+            data2 = data2[::10][1:-1]
+            data3 = data[data.datetime >= d3]
+            data = pd.concat([data1,data2,data3]).reset_index(drop='index')
+        return data
+
+
+    def get_cycle_data(self,rec, max_length=None, min_length=None, cycletime=None, silent=False, p_data=None, reduce=True):
         t0 = int(arrow.get(rec['starttime']).timestamp() * 1000 - self._pre_period * 1000)
         t1 = int(arrow.get(rec['endtime']).timestamp() * 1000 + self._post_period * 1000)
         if max_length:
@@ -255,6 +273,7 @@ class msgFSM:
             if (t1 - t0) < min_length * 1e3:
                 t1 = int(t0 + min_length * 1e3)
         data = self.load_data(cycletime, tts_from=t0, tts_to=t1, silent=silent, p_data=p_data)
+        data = self._resample_data(data,rec) if reduce else data
         data = data[(data['time'] >= t0) & (data['time'] <= t1)]
         return data
 
@@ -405,37 +424,54 @@ class msgFSM:
             # state machine for service Selector Switch
             self._fsm_Operating_Cycle(actstate, self.current_state, switch_ts, d_ts, msg)
 
-    ## 2nd run - in detail data analysis
-    def detect_edge(self, data, name, kind='left'):
+    def detect_edge_right(self, data, name, startversuch=pd.DataFrame([]), right=None):
+        right = startversuch['endtime'] if not startversuch.empty else right
+        ndata = data[data['datetime'] < right].copy() if right != None else data.copy()
         fac = {'left': -1.0, 'right': 1.0}
-        ldata = data[['datetime',name]]
+        ldata = ndata[['datetime',name]]
         x0 = ldata.iloc[0]['datetime'];
         x1 = ldata.iloc[-1]['datetime'];
-        edge0 = data.loc[data[name].idxmax()]
-        
+        edge0 = ndata.loc[ndata[name].idxmax()]
         try:
-            if kind == 'left':
-                xfac = (x1 - x0) / (edge0.datetime - x0)
-            elif kind == 'right':
-                xfac = (x1 - x0) / (x1 - edge0.datetime)
-            else:
-                raise ValueError('detect_edge: unknown kind parameter value.')
+            xfac = (x1 - x0) / (x1 - edge0.datetime)
         except ZeroDivisionError:
             xfac = 0.0
-        xfac = min(xfac, 5.0)
+        xfac = min(xfac, 150.0)
         #print(f"###### | xfac: {xfac:5.2f} | kind: {kind:>5} | name: {name}")
         lmax = ldata.loc[:,name].max() * xfac * 0.90
-
-        data[name+'_'+kind] = data[name]+(data['datetime'] - x0)*(fac[kind] * lmax)/(x1-x0) + lmax* (1-fac[kind])/2
-        
+        ndata['helpline_right'] = (ndata['datetime'] - x0)*lmax/(x1-x0)
+        ndata[name+'_right'] = ndata[name]+(ndata['datetime'] - x0)*lmax/(x1-x0)
         Point = namedtuple('edge',["loc", "val"])
         try:
-            edge = data.loc[data[name+'_'+kind].idxmax()]
+            edge = ndata.loc[ndata[name+'_right'].idxmax()]
         except Exception as err:
-            logging.error(str(err))
-            edge = data.iloc[-1]
-        return  Point(edge.datetime, ldata.at[edge.name,name])
+            #logging.error(str(err))
+            edge = ndata.iloc[-1]
+        return  Point(edge.datetime, ldata.at[edge.name,name]), ndata
 
+    def detect_edge_left(self, data, name, startversuch=pd.DataFrame([]), left=None):
+        left = startversuch['starttime'] if not startversuch.empty else left
+        ndata = data[data['datetime'] > left].copy() if left != None else data.copy()
+        ldata = ndata[['datetime',name]]
+        x0 = ldata.iloc[0]['datetime'];
+        x1 = ldata.iloc[-1]['datetime'];
+        edge0 = ndata.loc[ndata[name].idxmax()]
+        try:
+            xfac = (x1 - x0) / (edge0.datetime - x0)
+        except ZeroDivisionError:
+            xfac = 0.0
+        xfac = min(xfac, 20.0)
+        #print(f"###### | xfac: {xfac:5.2f} | left | name: {name}")
+        lmax = ldata.loc[:,name].max() * xfac * 0.90
+        ndata['helpline_left'] = (x0 - ndata['datetime'])*lmax/(x1-x0) + lmax
+        ndata[name+'_left'] = ndata[name]+(x0 - ndata['datetime'])*lmax/(x1-x0) + lmax
+        Point = namedtuple('edge',["loc", "val"])
+        try:
+            edge = ndata.loc[ndata[name+'_left'].idxmax()]
+        except Exception as err:
+            #logging.error(str(err))
+            edge = ndata.iloc[-1]
+        return  Point(edge.datetime, ldata.at[edge.name,name]), ndata
 
 ###################
 # CODING IN WORK
@@ -453,10 +489,14 @@ class msgFSM:
 
                     if not data.empty:
 
-                        pl = self.detect_edge(data, 'Power_PowerAct', kind='left')
-                        pr = self.detect_edge(data, 'Power_PowerAct', kind='right')
-                        sl = self.detect_edge(data, 'Various_Values_SpeedAct', kind='left')
-                        sr = self.detect_edge(data, 'Various_Values_SpeedAct', kind='right')
+                        # pl = self.detect_edge(data, 'Power_PowerAct', kind='left')
+                        # pr = self.detect_edge(data, 'Power_PowerAct', kind='right')
+                        # sl = self.detect_edge(data, 'Various_Values_SpeedAct', kind='left')
+                        # sr = self.detect_edge(data, 'Various_Values_SpeedAct', kind='right')
+                        pl, _ = self.detect_edge_left(data, 'Power_PowerAct', startversuch)
+                        pr, _ = self.detect_edge_right(data, 'Power_PowerAct', startversuch)
+                        sl, _ = self.detect_edge_left(data, 'Various_Values_SpeedAct', startversuch)
+                        sr, _ = self.detect_edge_right(data, 'Various_Values_SpeedAct', startversuch)
 
                         self._starts[ii]['title'] = f"{self._e} ----- Start {ii} {startversuch['mode']} | {'SUCCESS' if startversuch['success'] else 'FAILED'} | {startversuch['starttime'].round('S')}"
                         #sv_lines = {k:(startversuch[k] if k in startversuch else np.NaN) for k in self.filters['vertical_lines_times']]}
@@ -546,31 +586,41 @@ class msgFSM:
                         self.full_load_timestamp = int(msg['timestamp']) + self._default_ramp_duration
                 # Datensammlung
                 self._collect_data(actstate, msg)
+
     
-    ## Resultate aus einem erfolgreichen FSM Lauf ermitteln.
+    ## Resultate aus einem FSM Lauf ermitteln.
+    def disp_result(self, startversuch):
+        summary = pd.DataFrame.from_dict({k:v for k,v in dict(startversuch[self.filters['run2filter_times']]).items() if v == v}, orient='index').T.round(2)
+        #summary = pd.DataFrame(startversuch[self.filters['run2filter_times']], dtype=np.float64).fillna(0).round(2).T
+        display(HTML('<h3>'+ summary.to_html(escape=False, index=False) + '</h3>'))
+
     def disp_alarms(self, startversuch):
-        ald = []
+        ald = []; alt = []
         for al in startversuch['alarms']:
                 ald.append({
                         'state':al['state'],'severity':al['msg']['severity'],'Number':al['msg']['name'],
                         'date':pd.to_datetime(int(al['msg']['timestamp'])*1e6).strftime('%d.%m.%Y %H:%M:%S'),
                         'message':al['msg']['message']
                 })
+                alt.append(pd.to_datetime(int(al['msg']['timestamp'])*1e6))
         aldf = pd.DataFrame(ald)
         if not aldf.empty:
-                display(HTML('<h3>'+ aldf.to_html(escape=False, index=False) + '</h3>'))
+            display(HTML('<h3>'+ aldf.to_html(escape=False, index=False) + '</h3>'))
+        return alt
 
     def disp_warnings(self, startversuch):
-        wad = []
+        wad = []; wat = []
         for wd in startversuch['warnings']:
                 wad.append({
                         'state':wd['state'],'severity':wd['msg']['severity'],'Number':wd['msg']['name'],
                         'date':pd.to_datetime(int(wd['msg']['timestamp'])*1e6).strftime('%d.%m.%Y %H:%M:%S'),
                         'message':wd['msg']['message']
                 })
+                wat.append(pd.to_datetime(int(wd['msg']['timestamp'])*1e6))
         wdf = pd.DataFrame(wad)
         if not wdf.empty:
-                display(HTML('<h3>'+ wdf.to_html(escape=False, index=False) + '</h3>'))                
+            display(HTML('<h3>'+ wdf.to_html(escape=False, index=False) + '</h3>'))
+        return wat                
 
     def _pareto(self, mm):
         unique_res = set([msg['name'] for msg in mm])
@@ -642,7 +692,7 @@ class msgFSM:
                     </tr>
                 </thead>
                 <tr>
-                    <td>Interval</td>
+                    <td>{self._e['Engine ID']}</td>
                     <td>{self.first_message:%d.%m.%Y}</td>
                     <td>{self.last_message:%d.%m.%Y}</td>
                     <td>{self.period.days:5}</td>
