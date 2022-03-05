@@ -92,9 +92,13 @@ class FSM:
                 #{ 'trigger':'1254 Cold start CPU', 'new-state':'coldstart'}
                 ]),             
             'targetoperation': State('targetoperation',[
+                { 'trigger':'1236 Generator CB opened', 'new-state':'coolrun'},
+                #{ 'trigger':'3226 Ignition off', 'new-state':'standstill'}
+                ]),
+            'coolrun': State('coolrun',[
                 #{ 'trigger':'1236 Generator CB opened', 'new-state':'idle'},
                 { 'trigger':'3226 Ignition off', 'new-state':'standstill'}
-                ])       
+                ])        
         }
 
     @classmethod
@@ -126,11 +130,11 @@ class msgFSM:
 
         # Filters
         self.filters = {
-            'vertical_lines_times': ['startpreparation','starter','hochlauf','idle','synchronize','loadramp'],
-            'filter_times': ['startpreparation','starter','hochlauf','idle','synchronize','loadramp','cumstarttime'],
-            'run2filter_times': ['startpreparation','starter','hochlauf','idle','synchronize','loadramp','cumstarttime','maxload','ramprate','targetoperation'],
-            'filter_content': ['success','mode','startpreparation','starter','hochlauf','idle','synchronize','loadramp','cumstarttime','targetoperation'],
-            'run2filter_content':['index','success','mode','startpreparation','starter','hochlauf','idle','synchronize','loadramp','cumstarttime','maxload','ramprate','targetoperation'],
+            'vertical_lines_times': ['startpreparation','starter','hochlauf','idle','synchronize','loadramp','coolrun'],
+            'filter_times': ['startpreparation','starter','hochlauf','idle','synchronize','loadramp','cumstarttime','coolrun'],
+            'run2filter_times': ['startpreparation','starter','hochlauf','idle','synchronize','loadramp','cumstarttime','maxload','ramprate','targetoperation','coolrun'],
+            'filter_content': ['success','mode','startpreparation','starter','hochlauf','idle','synchronize','loadramp','cumstarttime','targetoperation','coolrun'],
+            'run2filter_content':['index','success','mode','startpreparation','starter','hochlauf','idle','synchronize','loadramp','cumstarttime','maxload','ramprate','targetoperation','coolrun'],
             'filter_alarms_and_warnings':['count_alarms', 'count_warnings'],
             'filter_period':['starttime','endtime']
         }
