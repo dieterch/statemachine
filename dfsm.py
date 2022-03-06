@@ -642,7 +642,8 @@ class msgFSM:
     def disp_result(self, startversuch):
         summary = pd.DataFrame.from_dict({k:v for k,v in dict(startversuch[self.filters['run2filter_times']]).items() if v == v}, orient='index').T.round(2)
         #summary = pd.DataFrame(startversuch[self.filters['run2filter_times']], dtype=np.float64).fillna(0).round(2).T
-        display(HTML('<h3>'+ summary.to_html(escape=False, index=False) + '</h3>'))
+        display(HTML(summary.to_html(escape=False, index=False)))
+        #display(HTML('<h3>'+ summary.to_html(escape=False, index=False) + '</h3>'))
 
     def disp_alarms(self, startversuch):
         ald = []; alt = []
@@ -655,7 +656,8 @@ class msgFSM:
                 alt.append(pd.to_datetime(int(al['msg']['timestamp'])*1e6))
         aldf = pd.DataFrame(ald)
         if not aldf.empty:
-            display(HTML('<h3>'+ aldf.to_html(escape=False, index=False) + '</h3>'))
+            display(HTML(aldf.to_html(escape=False, index=False)))
+            #display(HTML('<h3>'+ aldf.to_html(escape=False, index=False) + '</h3>'))
         return alt
 
     def disp_warnings(self, startversuch):
@@ -669,7 +671,8 @@ class msgFSM:
                 wat.append(pd.to_datetime(int(wd['msg']['timestamp'])*1e6))
         wdf = pd.DataFrame(wad)
         if not wdf.empty:
-            display(HTML('<h3>'+ wdf.to_html(escape=False, index=False) + '</h3>'))
+            display(HTML(wdf.to_html(escape=False, index=False)))
+            #display(HTML('<h3>'+ wdf.to_html(escape=False, index=False) + '</h3>'))
         return wat                
 
     def _pareto(self, mm):
