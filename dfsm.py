@@ -126,7 +126,7 @@ class msgFSM:
         self._p_to = p_to
         self.pfn = self._e._fname + '_statemachine.pkl'
         self._pre_period = 5*60 #sec 'prerun' in data download Start before cycle start event.
-        self._post_period = 30*60 #sec 'postrun' in data download Start after cycle stop event.
+        self._post_period = 21*60 #sec 'postrun' in data download Start after cycle stop event.
 
         # Filters
         self.filters = {
@@ -176,7 +176,11 @@ class msgFSM:
 
         if frompickle and os.path.exists(self.pfn):
             with open(self.pfn, 'rb') as handle:
-                self._starts = pickle.load(handle)
+                _start_temp = pickle.load(handle)
+                # hier muss noch geprüft werden, ob das picklefile valide ist
+                # sonst gibts schwer zu entdeckende Fehler :-(
+                # z.B.: tauchen neu hinzugefügte states nicht in den Ergebnissen auf ...
+                self._starts = _start_temp
                 #self.__dict__ = pickle.load(handle)
 
     def store(self):
@@ -251,6 +255,7 @@ class msgFSM:
         lts_to = int(tts + right)
         return self.get_period_data(lts_from, lts_to, cycletime, p_data=p_data)        
 
+    ###################
     def _resample_data(self, data, startversuch):
         # bis 15' nach Start 1" samples
         d1 = startversuch['starttime'] + pd.Timedelta(value=15, unit='min')
@@ -259,13 +264,11 @@ class msgFSM:
         
         if (d3 - d1) > pd.Timedelta(value=5,unit='min'):
             # dazwischen auf 10' 
-            data1 = data[data.datetime <= d1]
-            data2 = data[(data.datetime >= d1) & (data.datetime <= d3)]
-            data2 = data2[::10][1:-1]
-            data3 = data[data.datetime >= d3]
-            data = pd.concat([data1,data2,data3]).reset_index(drop='index')
-        return data
-
+            odata1 = data[data.datetime <= d1]
+            odata2 = data[(data.datetime >= d1) & (data.datetime <= d3)]
+            odata2 = odata2[::10][1:-1]
+            odata3 = data[data.datetime >= d3]
+        return pd.concat([odata1,odata2,odata3]).reset_index(drop='index')
 
     def get_cycle_data(self,rec, max_length=None, min_length=None, cycletime=None, silent=False, p_data=None, reduce=True):
         t0 = int(arrow.get(rec['starttime']).timestamp() * 1000 - self._pre_period * 1000)
@@ -277,9 +280,56 @@ class msgFSM:
             if (t1 - t0) < min_length * 1e3:
                 t1 = int(t0 + min_length * 1e3)
         data = self.load_data(cycletime, tts_from=t0, tts_to=t1, silent=silent, p_data=p_data)
-        data = self._resample_data(data,rec) if reduce else data
+        #data = self._resample_data(data,rec) if reduce else data
         data = data[(data['time'] >= t0) & (data['time'] <= t1)]
         return data
+    #################
+
+    def _debug(self,start, ende, data, dataname):
+        def todate(ts):
+            return pd.to_datetime(ts * 1000000).strftime('%d.%m.%Y %H:%M:%S')
+        print(f"########## debug {dataname } ##########")
+        if not data.empty:
+            print(f"soll: start={todate(start)} end={todate(ende)}")
+            print(f" ist: start={todate(data.iloc[0]['time'])} end={todate(data.iloc[-1]['time'])}")
+            print(f"diff: start={(data.iloc[0]['time']-start) // 1000}s end={(ende - data.iloc[-1]['time']) // 1000}s")
+        else:
+            print(f"soll: start={todate(start)} end={todate(ende)}")
+            print(f"=> empty dataset!!!")
+        print(f"-----------------------------------------")
+
+    def _load_reduced_data(self, startversuch, ptts_from, ptts_to, pdata=None):
+        # Hires 1" von 'starttime' bis 15' danach und von 15' vor 'endtime' bis Ende
+        # dazwischen alle 30" einen Messwert. 
+        data1 = pd.DataFrame([]);data2 = pd.DataFrame([]);data3 = pd.DataFrame([]);
+        d1t = int(arrow.get(startversuch['starttime'] + pd.Timedelta(value=15, unit='min')).timestamp() * 1000)
+        d3t = int(arrow.get(startversuch['endtime'] - pd.Timedelta(value=15, unit='min')).timestamp() * 1000)
+        d3t = max(d3t, ptts_from); d1t = min(d1t,d3t)
+        data1 = self.load_data(cycletime=1, tts_from=ptts_from, tts_to=d1t, silent=True, p_data=pdata)
+        if 'time' in data1:
+            data1 = data1[(data1['time'] >= ptts_from) & (data1['time'] < d1t)]
+        data2 = self.load_data(cycletime=30, tts_from=d1t, tts_to=d3t, silent=True, p_data=pdata)
+        if 'time' in data2:
+            data2 = data2[(data2['time'] >= d1t) & (data1['time'] < d3t)]
+        data3 = self.load_data(cycletime=1, tts_from=d3t, tts_to=ptts_to, silent=True, p_data=pdata)
+        if 'time' in data3:
+            data3 = data3[(data3['time'] >= d3t) & (data3['time'] <= ptts_to)]
+        #self._debug(ptts_from,d1t, data1, 'data1')
+        #self._debug(d1t,d3t, data2, 'data2')
+        #self._debug(d3t,ptts_to,data3, 'data3')
+        return pd.concat([data1,data2,data3]).reset_index(drop='index')
+
+    def get_cycle_data2(self,startversuch, max_length=None, min_length=None, cycletime=None, silent=False, p_data=None):
+        t0 = int(arrow.get(startversuch['starttime']).timestamp() * 1000 - self._pre_period * 1000)
+        t1 = int(arrow.get(startversuch['endtime']).timestamp() * 1000 + self._post_period * 1000)
+        if max_length:
+            if (t1 - t0) > max_length * 1e3:
+                t1 = int(t0 + max_length * 1e3)
+        if min_length:
+            if (t1 - t0) < min_length * 1e3:
+                t1 = int(t0 + min_length * 1e3)
+        data = self._load_reduced_data(startversuch, t0, t1, pdata=p_data)
+        return data[(data['time'] >= t0) & (data['time'] <= t1)]
 
     ## plotting
     def states_lines(self, startversuch):
@@ -477,8 +527,6 @@ class msgFSM:
             edge = ndata.iloc[-1]
         return  Point(edge.datetime, ldata.at[edge.name,name]), ndata
 
-###################
-# CODING IN WORK
     def run2(self, rda):
 
         index_list = []
@@ -489,7 +537,7 @@ class msgFSM:
 
                 if not 'maxload' in startversuch:
 
-                    data = self.get_cycle_data(startversuch, max_length=None, min_length=None, cycletime=1, silent=True)
+                    data = self.get_cycle_data2(startversuch, max_length=None, min_length=None, cycletime=1, silent=True)
 
                     if not data.empty:
 
@@ -560,8 +608,6 @@ class msgFSM:
 
         return pd.DataFrame([self._starts[s] for s in index_list])
 
-# END
-#################
     ## FSM Entry Point.
     def run1(self, enforce=False):
         if len(self._starts) == 0 or enforce:

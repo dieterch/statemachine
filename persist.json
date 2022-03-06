@@ -1,1 +1,1 @@
-{"dl": 0, "modes": [{"name": "???", "value": false}, {"name": "OFF", "value": false}, {"name": "MANUAL", "value": true}, {"name": "AUTO", "value": true}], "starts": [{"name": "True", "value": true}, {"name": "False", "value": true}]}
+{"dl": 0, "modes": [{"name": "???", "value": true}, {"name": "OFF", "value": true}, {"name": "MANUAL", "value": true}, {"name": "AUTO", "value": true}], "starts": [{"name": "True", "value": true}, {"name": "False", "value": false}]}
