@@ -640,7 +640,7 @@ class msgFSM:
     
     ## Resultate aus einem FSM Lauf ermitteln.
     def disp_result(self, startversuch):
-        summary = pd.DataFrame.from_dict({k:v for k,v in dict(startversuch[self.filters['run2filter_times']]).items() if v == v}, orient='index').T.round(2)
+        summary = pd.DataFrame.from_dict({k:v for k,v in dict(startversuch[['index'] + self.filters['run2filter_times']]).items() if v == v}, orient='index').T.round(2)
         #summary = pd.DataFrame(startversuch[self.filters['run2filter_times']], dtype=np.float64).fillna(0).round(2).T
         display(HTML(summary.to_html(escape=False, index=False)))
         #display(HTML('<h3>'+ summary.to_html(escape=False, index=False) + '</h3>'))
