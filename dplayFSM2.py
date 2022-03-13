@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import copy
 from tqdm.auto import tqdm
 import dmyplant2
 
@@ -29,7 +30,7 @@ class State:
         vector['statechange'] = self._trigger
         if self._trigger:
             vector = self.update_vector(vector)
-        return vector
+        return [vector]
 
 # SpezialFall Loadram, hier wird ein berechneter Statechange ermittelt.
 class LoadrampState(State):
@@ -41,18 +42,22 @@ class LoadrampState(State):
         super().__init__(statename, transferfun_list)
 
     def trigger_on_vector(self, vector):
-        vector = super().trigger_on_vector(vector)
+        retsv = super().trigger_on_vector(vector)
+        vector = retsv[0]
         if self._full_load_timestamp != None and int(vector['msg']['timestamp']) >= self._full_load_timestamp: # now switch to 'targetoperation'
-                vector = self.update_vector(vector)
-                vector['msg'] = {'name':'9047', 'message':'Target load reached (calculated)','timestamp':self._full_load_timestamp,'severity':600}
-                vector['statechange'] = True
-                vector['currentstate'] = 'targetoperation'
-                vector['currentstate_start'] = pd.to_datetime(self._full_load_timestamp * 1e6)
+                vector1 = self.update_vector(vector)
+                vector1['currentstate'] = 'targetoperation'
+
+                vector2 = copy.deepcopy(vector1) # copy vector, insert the calculated state_vector
+                vector2['msg'] = {'name':'9047', 'message':'Target load reached (calculated)','timestamp':self._full_load_timestamp,'severity':600}
+                vector2['statechange'] = True
+                vector2['currentstate'] = 'targetoperation'
+                vector2['currentstate_start'] = pd.to_datetime(self._full_load_timestamp * 1e6)
                 self._full_load_timestamp = None
-                return vector
+                return [vector2,vector1]
         if self._full_load_timestamp == None:
             self._full_load_timestamp = int(vector['msg']['timestamp']) + self._default_ramp_duration * 1e3
-        return vector
+        return [vector]
 
 # dataClass FSM
 class operationFSM:
@@ -84,7 +89,6 @@ class operationFSM:
                     { 'trigger':'3226 Ignition off', 'new-state':'standstill'}
                     ]),             
                 'loadramp': LoadrampState('loadramp',[
-                    { 'trigger':'9047 Target load reached', 'new-state':'targetoperation'},
                     { 'trigger':'3226 Ignition off', 'new-state':'standstill'}
                     ], e),             
                 'targetoperation': State('targetoperation',[
@@ -116,46 +120,24 @@ class demoFSM:
     def __init__(self, e, p_from = None, p_to=None, successtime=600):
         self._e = e
         self._successtime = successtime
-
         self.load_messages(e, p_from=p_from, p_to=p_to)
-
-        # Es gibt zwar die message, sie ist aber nicht bei allen Motoren implementiert
-        # und wird zumindest in einem Fall (Forsa Hartmoor, M?) nicht 100% zuverlässig geloggt
-        # daher ist das schätzen und verfeinern in run2 zuverlässiger. 1.3.2033 - Dieter 
-        #self._target_load_message = any(self._messages['name'] == '9047')
-        self._target_load_message = False
-        self._loadramp = self._e['rP_Ramp_Set'] or 0.625 # %/sec
-        self._default_ramp_duration = int(100.0 / self._loadramp * 1e3)
-        self.full_load_timestamp = None
-        # print(f"{'Using' if self._target_load_message else 'Calculating'} '9047 target load reached' Message.")
-        # if not self._target_load_message:
-        #     print(f"load ramp assumed to {self._loadramp} %/sec based on {'rP_Ramp_Set Parameter' if self._e['rP_Ramp_Set'] else 'INNIO standard'}")
 
         fsmStates = operationFSM(self._e)
         self.states = fsmStates.states
 
-        self.current_service_selector = '???'
-        self._in_operation = '???'
-        self.current_state = fsmStates.initial_state
-        self.last_ts = pd.to_datetime(self.first_message)
         self.status_vector = {
             'statechange':True,
             'laststate': 'init',
             'laststate_start': self.first_message,
-            'currentstate': self.current_state,
+            'currentstate': fsmStates.initial_state,
             'currentstate_start': self.first_message,
             'in_operation': 'off',
-            'service_selector': '???'
+            'service_selector': '???',
         }
 
-        self._starts = []
-        self._starts_counter = 0
-
-        # for initialize some values for collect_data.
         self._runlog = []
         self._runlogdetail = []
         self.init_results()
-
 
     def init_results(self):
         self.results = {
@@ -176,16 +158,20 @@ class demoFSM:
         }        
 
     @property
-    def result(self):
-        for startversuch in self._starts:
-            startversuch['count_alarms'] = len(startversuch['alarms'])
-            startversuch['count_warnings'] = len(startversuch['warnings'])
-        return pd.DataFrame(self._starts)
+    def starts(self):
+        return pd.DataFrame(self.results['starts'])
 
+    @property
+    def stops(self):
+        return pd.DataFrame(self.results['stops'])
+        #return self.results['stops']
 
     ## message handling
     def load_messages(self,e, p_from=None, p_to=None):
         self._messages = e.get_messages(p_from, p_to)
+        pfrom_ts = int(pd.to_datetime(p_from, infer_datetime_format=True).timestamp() * 1000) if p_from else 0
+        pto_ts = int(pd.to_datetime(p_to, infer_datetime_format=True).timestamp() * 1000) if p_to else int(pd.Timestamp.now().timestamp() * 1000)
+        self._messages = self._messages[(self._messages.timestamp > pfrom_ts) & (self._messages.timestamp < pto_ts)]
         self.first_message = pd.to_datetime(self._messages.iloc[0]['timestamp']*1e6)
         self.last_message = pd.to_datetime(self._messages.iloc[-1]['timestamp']*1e6)
         self._period = pd.Timedelta(self.last_message - self.first_message).round('S')
@@ -212,41 +198,35 @@ class demoFSM:
                 for line in self._runlog:
                     f.write(line + '\n')
 
-
 #################################################################################################################
-    ### die Finite State Machine selbst:
-    #1225 Service selector switch Off
-    #1226 Service selector switch Manual
-    #1227 Service selector switch Automatic
-    def _fsm_Service_selector(self, msg):
-        if msg['name'] == '1225 Service selector switch Off'[:4]:
-            self.current_service_selector = 'OFF'
+### die Finite State Machines:
+    def _fsm_Service_selector(self):
+        if self.status_vector['msg']['name'] == '1225 Service selector switch Off'[:4]:
             self.status_vector['service_selector'] = 'OFF'
-        if msg['name'] == '1226 Service selector switch Manual'[:4]:
-            self.current_service_selector = 'MANUAL'
+        if self.status_vector['msg']['name'] == '1226 Service selector switch Manual'[:4]:
             self.status_vector['service_selector'] = 'MANUAL'
-        if msg['name'] == '1227 Service selector switch Automatic'[:4]:
-            self.current_service_selector = 'AUTO'
+        if self.status_vector['msg']['name'] == '1227 Service selector switch Automatic'[:4]:
             self.status_vector['service_selector'] = 'AUTO'
 
-    def _fsm_collect_alarms(self, msg):
-        if self._in_operation == 'on':
-            if msg['severity'] == 800:
-                self._starts[-1]['alarms'].append({'state':self.current_state, 'msg': msg})
-                self.results['starts'][-1]['alarms'].append({'state':self.status_vector['currentstate'], 'msg': msg})
-            if msg['severity'] == 700:
-                self._starts[-1]['warnings'].append({'state':self.current_state, 'msg': msg})
-                self.results['starts'][-1]['warnings'].append({'state':self.status_vector['currentstate'], 'msg': msg})
-        elif self._in_operation == 'off':
-            if msg['severity'] == 800:
-                self.results['stops'][-1]['alarms'].append({'state':self.status_vector['currentstate'], 'msg': msg})
-            if msg['severity'] == 700:
-                self.results['stops'][-1]['warnings'].append({'state':self.status_vector['currentstate'], 'msg': msg})
+    def _fsm_collect_alarms(self):
+        key = 'starts' if self.status_vector['in_operation'] == 'on' else 'stops'
+        if self.status_vector['msg']['severity'] == 800:
+            self.results[key][-1]['alarms'].append({
+                'state':self.status_vector['currentstate'], 
+                'msg': self.status_vector['msg']
+                })
+        if self.status_vector['msg']['severity'] == 700:
+            self.results[key][-1]['warnings'].append({
+                'state':self.status_vector['currentstate'],
+                'msg': self.status_vector['msg']
+                })
 
-    def _fsm_Operating_Cycle2(self):
+    def _fsm_Operating_Cycle(self):
         if self.status_vector['statechange']:
             if self.status_vector['currentstate'] == 'startpreparation':
                 self.results['stops'][-1]['endtime'] = self.status_vector['currentstate_start']
+                self.results['stops'][-1]['count_alarms'] = len(self.results['stops'][-1]['alarms'])
+                self.results['stops'][-1]['count_warnings'] = len(self.results['stops'][-1]['warnings'])
                 # apends a new record to the Starts list.
                 self.results['starts'].append({
                     'run2':False,
@@ -256,6 +236,16 @@ class demoFSM:
                     'starttime': self.status_vector['laststate_start'],
                     'endtime': pd.Timestamp(0),
                     'cumstarttime': pd.Timedelta(0),
+                    'startpreparation':np.nan,
+                    'starter':np.nan,
+                    'speedup':np.nan,
+                    'idle':np.nan,
+                    'synchronize':np.nan,
+                    'loadramp':np.nan,
+                    'targetoperation':np.nan,
+                    'rampdown':np.nan,
+                    'coolrun':np.nan,
+                    'runout':np.nan,
                     'timing': {},
                     'alarms': [],
                     'warnings': [],
@@ -307,151 +297,30 @@ class demoFSM:
                 'mode': self.status_vector['service_selector'],
             }
             self.results['runlog'].append(_logline)
-            #_logtxt = f"{new_transition_time.strftime('%d.%m.%Y %H:%M:%S')} |{actstate:<18} {_to_sec(duration):>10.1f}s {_to_sec(self._timer):>10.1f}s {msg['name']} {msg['message']:<40} {len(self._starts):>3d} {len([s for s in self._starts if s['success']]):>3d} {self._in_operation:>3} {self.current_service_selector:>6} => {self.current_state:<20}"
-            #_logtxt = f"{switch_point.strftime('%d.%m.%Y %H:%M:%S')} |{actstate:<18} {_to_sec(duration):8.1f}s {msg['name']} {msg['message']:<40} {len(self._starts):>3d} {len([s for s in self._starts if s['success']]):>3d} {self._in_operation:>3} {self.current_service_selector:>4} => {self.current_state:<20}"
-            #self._runlog.append(_logtxt)
-
-
-    def _fsm_Operating_Cycle(self, actstate, act_transition_time, newstate, new_transition_time, duration, msg):
-        def _to_sec(time_object):
-            return float(time_object.seconds) + float(time_object.microseconds) / 1e6
-        # Start Preparatio => the Engine ist starting
-        if self.current_state == 'startpreparation':
-            # apends a new record to the Starts list.
-            self._starts.append({
-                'run2':False,
-                'no':self._starts_counter,
-                'success': False,
-                'mode':self.current_service_selector,
-                'starttime': new_transition_time,
-                'endtime': pd.Timestamp(0),
-                'cumstarttime': pd.Timedelta(0),
-                'timing': {},
-                'alarms': [],
-                'warnings': [],
-                'maxload': np.nan,
-                'ramprate': np.nan
-            })
-            self._starts_counter += 1 # index for next start
-            # indicate a 
-            self._in_operation = 'on'
-            self._timer = pd.Timedelta(0)
-        elif self._in_operation == 'on': # and actstate != FSM.initial_state:
-            self._timer = self._timer + duration
-
-            if actstate in self._starts[-1]: # add all duration a start is in a certain state ( important if the engine switches back and forth between states, e.g. Forsa Hartmoor M4, 18.1.2022 fff)
-                self._starts[-1][actstate] += _to_sec(duration)
-            else:
-                self._starts[-1][actstate] = _to_sec(duration) #if actstate != 'targetoperation' else duration.round('S')
-            
-            self._starts[-1]['timing']['start_'+ actstate] = act_transition_time 
-            self._starts[-1]['timing']['end_'+ actstate] = new_transition_time 
-
-            if actstate not in ['targetoperation','rampdown','coolrun','aftercooling']: 
-                self._starts[-1]['cumstarttime'] = _to_sec(self._timer)
-
-        # if self.current_state == 'targetoperation':
-        #     if self._in_operation == 'on':
-        #         self._starts[-1]['success'] = True   # wenn der Start bis hierhin kommt, ist er erfolgreich.
-
-        # Ein Motorlauf(-versuch) is zu Ende. 
-        if self.current_state == 'standstill': #'mode-off'
-        #if actstate == 'loadramp': # übergang von loadramp to 'targetoperation'
-            if self._in_operation == 'on':
-                self._starts[-1]['endtime'] = new_transition_time
-                if 'targetoperation' in self._starts[-1]:
-                    #successful if the targetoperation run was longer than specified
-                    self._starts[-1]['success'] = (self._starts[-1]['targetoperation'] > self._successtime) 
-            self._in_operation = 'off'
-            self._timer = pd.Timedelta(0)
-
-        _logline= {
-            'actstate': actstate,
-            'start_time': act_transition_time.strftime('%d.%m.%Y %H:%M:%S'),
-            'msg': msg['name'] + ' ' + msg['message'],
-            'currenstate': self.current_state,
-            'new_transition_time': new_transition_time.strftime('%d.%m.%Y %H:%M:%S'),
-            'duration': _to_sec(duration),
-            '_timer': _to_sec(self._timer),
-            'starts': len(self._starts),
-            'Successful_starts': len([s for s in self._starts if s['success']]),
-            'operation': self._in_operation,
-            'mode': self.current_service_selector,
-        }
-        self._runlog.append(_logline)
-        #_logtxt = f"{new_transition_time.strftime('%d.%m.%Y %H:%M:%S')} |{actstate:<18} {_to_sec(duration):>10.1f}s {_to_sec(self._timer):>10.1f}s {msg['name']} {msg['message']:<40} {len(self._starts):>3d} {len([s for s in self._starts if s['success']]):>3d} {self._in_operation:>3} {self.current_service_selector:>6} => {self.current_state:<20}"
-        #_logtxt = f"{switch_point.strftime('%d.%m.%Y %H:%M:%S')} |{actstate:<18} {_to_sec(duration):8.1f}s {msg['name']} {msg['message']:<40} {len(self._starts):>3d} {len([s for s in self._starts if s['success']]):>3d} {self._in_operation:>3} {self.current_service_selector:>4} => {self.current_state:<20}"
-        #self._runlog.append(_logtxt)
-
-    def _collect_data(self, actstate, msg):
-        if self.current_state != actstate:
-            transition_time = pd.to_datetime(float(msg['timestamp'])*1e6)
-            d_ts = pd.Timedelta(transition_time - self.last_ts) if self.last_ts else pd.Timedelta(0)
-            self._fsm_Operating_Cycle(actstate, self.last_ts, self.current_state, transition_time, d_ts, msg)
-            self.last_ts = transition_time
-
-    def handle_states(self, lactstate, lcurrent_state, msg):
-
-        # Sonderbehandlung Ende der Phase loadramp
-        if self._target_load_message:
-            new_state = self.states[lcurrent_state].send(msg)  # die Message kommt in den messages vor, normal behandeln        
-
-        else: # die 'target load reached' message kommt nicht vor => die Zeit bis Vollast muß in RUN 1 geschätzt werden ...
-            #die FSM hat die Phase 'loadramp' noch nicht erreicht 
-            if self.full_load_timestamp == None or int(msg['timestamp']) < self.full_load_timestamp:
-                new_state = self.states[lcurrent_state].send(msg)           
-            elif int(msg['timestamp']) >= self.full_load_timestamp: # now switch to 'targetoperation'
-                dmsg = {'name':'9047', 'message':'Target load reached (calculated)','timestamp':self.full_load_timestamp,'severity':600}
-                new_state = self.states[lcurrent_state].send(dmsg)            
-                # Inject the message , collect the data
-                self._collect_data(lactstate, dmsg)
-                # rest the algorithm for the next cycle.
-                self.full_load_timestamp = None
-                lactstate = lcurrent_state
-
-            # Algorithm to switch from 'loadramp to' 'targetoperation'
-            # direkt bein Umschalten das Ende der Rampe berechnen
-
-            if lcurrent_state == 'loadramp' and self.full_load_timestamp == None:  
-                self.full_load_timestamp = int(msg['timestamp']) + self._default_ramp_duration
-
-        return lactstate, new_state
-
 
     def call_trigger_states(self):
         return self.states[self.status_vector['currentstate']].trigger_on_vector(self.status_vector)
                   
     ## FSM Entry Point.
     def run1(self, enforce=False):
-        if len(self._starts) == 0 or enforce or not ('run2' in self._starts[0]):
-            self._starts = []
-            self._starts_counter = 0
+        if len(self.results['starts']) == 0 or enforce or not ('run2' in self.results['starts'][0]):
             self.init_results()     
-            for i,msg in tqdm(self._messages.iterrows(), total=self._messages.shape[0], ncols=80, mininterval=1, unit=' messages', desc="FSM"):
-                last_state = self.current_state
+            #for i,msg in tqdm(self._messages.iterrows(), total=self._messages.shape[0], ncols=80, mininterval=1, unit=' messages', desc="FSM"):
+            for i, msg in self._messages.iterrows():
                 self.status_vector['msg'] = msg
-                self.status_vector = self.call_trigger_states()   
-                last_state, self.current_state = self.handle_states(last_state, self.current_state, msg)
-                #print(f"o {last_state:18} {self.current_state:18} {self.msgtxt(msg, i)}")
-                self._runlogdetail.append(
-                    f"= {'*' if self.status_vector['statechange'] else '':2} {self.status_vector['laststate']:18} " + \
-#                    f"{self.status_vector['laststate_start'].strftime('%d.%m %H:%M:%S')} -> " + \
-                    f"{self.status_vector['laststate_start']} -> " + \
-                    f"{self.status_vector['currentstate']:18}" + \
-#                    f"{self.status_vector['currentstate_start'].strftime('%d.%m %H:%M:%S')} " + \
-                    f"{self.status_vector['currentstate_start']} " + \
-                    f"{self.msg_smalltxt(self.status_vector['msg'])}")
-                self._fsm_Service_selector(msg)
-                self._fsm_collect_alarms(msg)
-                self._fsm_Operating_Cycle2()
-                self._collect_data(last_state, msg)
+                retsv = self.call_trigger_states()
+                for sv in retsv:   
+                    self.status_vector = sv   
+                    self._runlogdetail.append(
+                        f"= {'*' if self.status_vector['statechange'] else '':2} {self.status_vector['laststate']:18} " + \
+                        f"{self.status_vector['laststate_start'].strftime('%d.%m %H:%M:%S')} -> " + \
+                        f"{self.status_vector['currentstate']:18}" + \
+                        f"{self.status_vector['currentstate_start'].strftime('%d.%m %H:%M:%S')} " + \
+                        f"{self.msg_smalltxt(self.status_vector['msg'])}")
 
-
-
-
-
-
-
+                    self._fsm_Service_selector()
+                    self._fsm_collect_alarms()
+                    self._fsm_Operating_Cycle()
 
 
 #########################################################################################################################
