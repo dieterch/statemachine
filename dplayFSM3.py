@@ -1,9 +1,13 @@
 import pandas as pd
 import numpy as np
 import copy
+from pprint import pformat as pf
+import arrow
 from tqdm.auto import tqdm
 import dmyplant2
-
+import logging
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 class StateVector:
     statechange = False
@@ -129,11 +133,15 @@ class operationFSM:
     def states(self):
         return self._states
 
+class filterFSM:
+    run2filter_content = ['no','success','mode','startpreparation','starter','speedup','idle','synchronize','loadramp','cumstarttime','maxload','ramprate','targetoperation','rampdown','coolrun','runout','count_alarms', 'count_warnings']
+    vertical_lines_times = ['startpreparation','starter','speedup','idle','synchronize','loadramp','targetoperation','rampdown','coolrun','runout']
+
 class demoFSM:
-    def __init__(self, e, p_from = None, p_to=None, successtime=600):
+    def __init__(self, e, p_from = None, p_to=None, skip_days=None, frompickle=False, successtime=600):
         self._e = e
         self._successtime = successtime
-        self.load_messages(e, p_from=p_from, p_to=p_to)
+        self.load_messages(e, p_from, p_to, skip_days)
 
         fsmStates = operationFSM(self._e)
         self.states = fsmStates.states
@@ -178,7 +186,7 @@ class demoFSM:
         return pd.DataFrame(self.results['stops'])
 
     ## message handling
-    def load_messages(self,e, p_from=None, p_to=None):
+    def load_messages(self,e, p_from=None, p_to=None, skip_days=None):
         self._messages = e.get_messages(p_from, p_to)
         pfrom_ts = int(pd.to_datetime(p_from, infer_datetime_format=True).timestamp() * 1000) if p_from else 0
         pto_ts = int(pd.to_datetime(p_to, infer_datetime_format=True).timestamp() * 1000) if p_to else int(pd.Timestamp.now().timestamp() * 1000)
@@ -186,6 +194,9 @@ class demoFSM:
         self.first_message = pd.to_datetime(self._messages.iloc[0]['timestamp']*1e6)
         self.last_message = pd.to_datetime(self._messages.iloc[-1]['timestamp']*1e6)
         self._period = pd.Timedelta(self.last_message - self.first_message).round('S')
+        if skip_days and not p_from:
+            self.first_message = pd.Timestamp(arrow.get(self.first_message).shift(days=skip_days).timestamp()*1e9)
+            self._messages = self._messages[self._messages['timestamp'] > int(arrow.get(self.first_message).shift(days=skip_days).timestamp()*1e3)]
         self.count_messages = self._messages.shape[0]
 
     def msgtxt(self, msg, idx=0):
