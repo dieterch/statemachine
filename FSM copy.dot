@@ -23,7 +23,6 @@ digraph G {
     loadramp [label="loadramp"]
     loadramp -> standstill [label="3226 Ignition off"]
     loadramp -> rampdown [label="1232 Request module off"]
-    loadramp -> targetoperation [label="Calculated statechange"]
     targetoperation [label="targetoperation"]
     targetoperation -> rampdown [label="1232 Request module off"]
     targetoperation -> idle [label="1236 Generator CB opened"]

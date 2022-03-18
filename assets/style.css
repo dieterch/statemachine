@@ -1,0 +1,80 @@
+body {
+    font-family: "Lato", sans-serif;
+    margin: 0;
+    background-color: #F7F7F7;
+}
+
+input[type='text'],
+input[type='email']
+ {
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    font-size: 16px;
+    padding: 0.8rem 0.5rem 0.8rem 0.5rem;
+}
+
+input[type='text']:focus {
+    border-color: #7db0fb;
+}
+
+.header {
+    background-color: #1a18184b;
+    height: 120px;
+    padding: 5px 0 5px 10px;
+}
+
+.header-title {
+    color: #000000;
+    font-size: 28px;
+    font-weight: bold;
+    text-align: left;
+    margin: 0 auto;
+}
+
+.wrapper {
+    margin-right: auto;
+    margin-left: auto;
+    /*max-width: 1024px;*/
+    width: 95%;
+    padding-right: 10px;
+    padding-left: 10px;
+    margin-top: 32px;
+}
+
+.card {
+    margin-bottom: 24px;
+    box-shadow: 0 4px 6px 0 rgba(0, 0, 0, 0.18);
+}
+
+.menu {
+    height: 112px;
+    /* width: 912px; */
+    width: 95%;
+    display: flex;
+    justify-content: space-evenly;
+    padding-top: 24px;
+    margin: -80px auto 0 auto;
+    background-color: #FFFFFF;
+    box-shadow: 0 4px 6px 0 rgba(0, 0, 0, 0.18);
+}
+
+.Select-control {
+    /* width: 256px; */
+    width: 350px;
+    height: 48px;
+}
+
+.Select--single > .Select-control .Select-value, .Select-placeholder {
+    line-height: 48px;
+}
+
+.Select--multi .Select-value-label {
+    line-height: 32px;
+}
+
+.menu-title {
+    margin-bottom: 6px;
+    font-weight: bold;
+    color: #0451aa;
+}
+
