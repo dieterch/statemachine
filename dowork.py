@@ -120,6 +120,7 @@ def plot_plotly(
                                     'title_standoff': 4,'showgrid':False,'fixedrange':True,'color':'rgba(255,255,255,0)'}
 
     customdata=[tuple(x) for x in data[[n['col'][0] for n in ddset]].to_numpy()]
+    #customdata=np.array(data)
     hovertemplate = ('<br>'.join([f"{n['col'][0].split('_')[-1]:>14} %{{customdata[{i}]:7.2f}} [{n['unit']}]" for i, n in enumerate(ddset)]) + '<extra></extra>')
 
     fig2 = go.Figure(data=pdata, layout=playout)
