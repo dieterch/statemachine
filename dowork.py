@@ -2,6 +2,7 @@ import pandas as pd; pd.options.mode.chained_assignment = None # default warn =>
 import numpy as np
 import arrow
 import bokeh
+import time
 from bokeh.models import Span, Text, Label
 from IPython.display import HTML, display
 from dmyplant2 import dbokeh_chart, bokeh_show, add_dbokeh_vlines, add_dbokeh_hlines, FSMPlot_Start, detect_edge_left, detect_edge_right
@@ -76,45 +77,51 @@ def plot_plotly(
         dfigsize=(16,8)
     ):
     
-    dpi = 66
-    pwidth = dfigsize[0] * dpi
-    pheight = dfigsize[1] * dpi
+    dpi = 66; pwidth = dfigsize[0] * dpi; pheight = dfigsize[1] * dpi
     ax_width = 75
     asp = ax_width / pwidth
 
     pdata = []
     playout = {
+        'title_text': f"{fsm._e} -- Start {startversuch['no']} {startversuch['mode']} | {'SUCCESS' if startversuch['success'] else 'FAILED'} | {startversuch['starttime'].round('S')}",
         'hovermode':"x unified",
         'hoverlabel':{
             'bgcolor': 'rgba(240,240,240,0.8)',
             'font_family': 'Courier',
+            'font_size':16,
             'namelength': -1
         },
         'showlegend':True,
-        'legend': { 'yanchor':'top', 'y':0.99,'xanchor':'left', 'x':0.01,'bgcolor': 'rgba(255,255,255,0.4)'},
-        'title_text': f"{fsm._e} -- Start {startversuch['no']} {startversuch['mode']} | {'SUCCESS' if startversuch['success'] else 'FAILED'} | {startversuch['starttime'].round('S')}",
-        'width':pwidth,
-        'height':pheight,
+        'legend': { 'yanchor':'top', 
+                    'y':0.99,'xanchor':'left', 
+                    'x':0.01,'bgcolor': 
+                    'rgba(255,255,255,0.4)'
+        },
         'xaxis':{ 
-            'domain':[0.0,1.0-(len(ddset)-2)*asp],
+            'domain':[0.0,min(1.0,1.0-(len(ddset)-2)*asp)],
             'showgrid':True
         },
+        'width':pwidth,
+        'height':pheight,
     }
 
+    # add scatter traces and axis
     _add_plotly_trace(0, ddset[0], data, pdata, playout, panchor='x', pside='left')
     if len(ddset) > 1:
         for i,graph in enumerate(ddset[1:]):
             _add_plotly_trace(i+1, graph, data, pdata, playout, panchor='free', pside='right', pposition=float(1-asp*i))
 
+    t0 = time.time()
+    # Trick für Hover - eine Linie mit Alpha = 0, also unsichtbar hält das hovertemplate
     data['hover'] = 60
     pdata.append(go.Scattergl(x=data['datetime'],y=data['hover'], line_color='rgba(255,255,255,0)', name="",yaxis=f"y{len(pdata)+1}"))
     playout[f"yaxis{len(pdata)}"] = {'title':'','anchor':'free','overlaying':'y','side':'right','position':1.0,'range':(0,100),
-                                    'title_standoff': 4,'showgrid':False,'fixedrange':True,'color':'rgba(255,255,255,0)'}
-
-    customdata=[tuple(x) for x in data[[n['col'][0] for n in ddset]].to_numpy()]
-    #customdata=np.array(data)
-    hovertemplate = ('<br>'.join([f"{n['col'][0].split('_')[-1]:>14} %{{customdata[{i}]:7.2f}} [{n['unit']}]" for i, n in enumerate(ddset)]) + '<extra></extra>')
-
+                                    'title_standoff': 4,'showgrid':False,'showline':False,'fixedrange':True,'color':'rgba(255,255,255,0)'}
     fig2 = go.Figure(data=pdata, layout=playout)
+    customdata=np.array(data[[e for rec in ddset for e in rec['col']]])
+    hovertemplate = ('<br>'.join([f"{n['col'][0].split('_')[-1]:>14} %{{customdata[{i}]:7.2f}} [{n['unit']}]" for i, n in enumerate(ddset)]) + '<extra></extra>')
     fig2.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+    t1 = time.time()
+    print(f"Dauer Berechnung Hovertemplate: {t1-t0}")
+
     return fig2
