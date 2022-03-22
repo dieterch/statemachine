@@ -47,6 +47,26 @@ def plot_now(
     return fig
 
 
+def _add_plotly_trace(i, rec, data, pdata, playout, pside='right', panchor='free', pposition=0.0):
+    ax_suffix = str(i+1) if i > 0 else ''
+    short_axname = 'y' + ax_suffix; long_axname = 'yaxis' + ax_suffix
+    playout[long_axname] = {
+        'title':f"{rec['col'][0].split('_')[-1]} [{rec['unit']}]",
+        'anchor':panchor,
+        'overlaying':'y',
+        'side':pside,
+        'position':pposition,
+        'title_standoff': 4,
+        'showgrid':True,
+        'fixedrange':True}
+    if 'ylim' in rec:
+        playout[long_axname].update({'range': rec['ylim']})
+    if 'color' in rec:
+        playout[long_axname].update({'color': rec['color']})
+        pdata.append(go.Scattergl(x=data['datetime'], y=data[rec['col'][0]], line_color=rec['color'] ,name=rec['col'][0], yaxis=short_axname))
+    else:
+        pdata.appen(go.Scattergl(x=data['datetime'], y=data[rec['col'][0]] ,name=rec['col'][0], yaxis=short_axname))
+
 def plot_plotly(
         fsm,
         data,
@@ -59,19 +79,14 @@ def plot_plotly(
     dpi = 66
     pwidth = dfigsize[0] * dpi
     pheight = dfigsize[1] * dpi
-
-    #pwidth = 1200
-    #pheight = 800 
     ax_width = 75
     asp = ax_width / pwidth
 
-    pdata = [ go.Scattergl(x=data['datetime'], y=data[ddset[0]['col'][0]], line_color=ddset[0]['color'] ,name=ddset[0]['col'][0], yaxis=f"y") ] if 'color' in ddset[0] else \
-            [ go.Scattergl(x=data['datetime'], y=data[ddset[0]['col'][0]] ,name=ddset[0]['col'][0], yaxis=f"y") ]
-
+    pdata = []
     playout = {
         'hovermode':"x unified",
         'hoverlabel':{
-            'bgcolor': 'rgba(240,240,240,0.75)',
+            'bgcolor': 'rgba(240,240,240,0.8)',
             'font_family': 'Courier',
             'namelength': -1
         },
@@ -81,38 +96,15 @@ def plot_plotly(
         'width':pwidth,
         'height':pheight,
         'xaxis':{ 
-            'domain':[0.0,1-(len(ddset)-2)*asp],
+            'domain':[0.0,1.0-(len(ddset)-2)*asp],
             'showgrid':True
         },
-        'yaxis':{
-            'title':f"{ddset[0]['col'][0].split('_')[-1]} [{ddset[0]['unit']}]",
-            'anchor':'x','overlaying':'y','side':'left','position':0.0,
-            'title_standoff': 4,
-            'showgrid':True,
-            'fixedrange':True
-        }
     }
-    if 'ylim' in ddset[0]:
-            playout['yaxis'].update({'range': ddset[0]['ylim']})
-    if 'color' in ddset[0]:
-            playout['yaxis'].update({'color': ddset[0]['color']})
 
+    _add_plotly_trace(0, ddset[0], data, pdata, playout, panchor='x', pside='left')
     if len(ddset) > 1:
         for i,graph in enumerate(ddset[1:]):
-            yaxisname = f'yaxis{i+2}'
-            playout[yaxisname] = {
-                'title':f"{graph['col'][0].split('_')[-1]} [{graph['unit']}]",
-                'anchor':'free','overlaying':'y','side':'right','position':(1-asp*i),
-                'title_standoff': 4,
-                'showgrid':True,
-                'fixedrange':True}
-            if 'ylim' in graph: playout[yaxisname].update({'range':graph['ylim']})
-            if 'color' in graph:
-                playout[yaxisname].update({'color':graph['color']})
-                pdata.append( go.Scattergl(x=data['datetime'], y=data[graph['col'][0]], line_color=graph['color'], name=graph['col'][0], yaxis=f"y{i+2}"))
-            else:
-                pdata.append( go.Scattergl(x=data['datetime'], y=data[graph['col'][0]], name=graph['col'][0], yaxis=f"y{i+2}"))
-
+            _add_plotly_trace(i+1, graph, data, pdata, playout, panchor='free', pside='right', pposition=float(1-asp*i))
 
     data['hover'] = 60
     pdata.append(go.Scattergl(x=data['datetime'],y=data['hover'], line_color='rgba(255,255,255,0)', name="",yaxis=f"y{len(pdata)+1}"))
