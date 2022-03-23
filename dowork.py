@@ -51,8 +51,9 @@ def plot_now(
 def _add_plotly_trace(i, rec, data, pdata, playout, pside='right', panchor='free', pposition=0.0):
     ax_suffix = str(i+1) if i > 0 else ''
     short_axname = 'y' + ax_suffix; long_axname = 'yaxis' + ax_suffix
+    ttl = ', '.join([name.split('_')[-1] for name in rec['col']])
     playout[long_axname] = {
-        'title':f"{rec['col'][0].split('_')[-1]} [{rec['unit']}]",
+        'title':f"{ttl} [{rec['unit']}]",
         'anchor':panchor,
         'overlaying':'y',
         'side':pside,
@@ -63,8 +64,13 @@ def _add_plotly_trace(i, rec, data, pdata, playout, pside='right', panchor='free
     if 'ylim' in rec:
         playout[long_axname].update({'range': rec['ylim']})
     if 'color' in rec:
-        playout[long_axname].update({'color': rec['color']})
-        pdata.append(go.Scattergl(x=data['datetime'], y=data[rec['col'][0]], line_color=rec['color'] ,name=rec['col'][0], yaxis=short_axname))
+        if isinstance(rec['color'], list):
+            playout[long_axname].update({'color': 'black'})
+            for i, dname in enumerate(rec['col']):
+                pdata.append(go.Scattergl(x=data['datetime'], y=data[dname], line_color=rec['color'][i] ,name=dname, yaxis=short_axname))
+        else:
+            playout[long_axname].update({'color': rec['color']})
+            pdata.append(go.Scattergl(x=data['datetime'], y=data[rec['col'][0]], line_color=rec['color'] ,name=rec['col'][0], yaxis=short_axname))
     else:
         pdata.appen(go.Scattergl(x=data['datetime'], y=data[rec['col'][0]] ,name=rec['col'][0], yaxis=short_axname))
 
@@ -103,6 +109,13 @@ def plot_plotly(
         },
         'width':pwidth,
         'height':pheight,
+        'margin':{
+            'l':50,
+            'r':50,
+            'b':50,
+            't':50,
+            'pad':4
+        }   
     }
 
     # add scatter traces and axis
@@ -111,17 +124,18 @@ def plot_plotly(
         for i,graph in enumerate(ddset[1:]):
             _add_plotly_trace(i+1, graph, data, pdata, playout, panchor='free', pside='right', pposition=float(1-asp*i))
 
-    t0 = time.time()
+    #t0 = time.time()
     # Trick für Hover - eine Linie mit Alpha = 0, also unsichtbar hält das hovertemplate
     data['hover'] = 60
     pdata.append(go.Scattergl(x=data['datetime'],y=data['hover'], line_color='rgba(255,255,255,0)', name="",yaxis=f"y{len(pdata)+1}"))
     playout[f"yaxis{len(pdata)}"] = {'title':'','anchor':'free','overlaying':'y','side':'right','position':1.0,'range':(0,100),
                                     'title_standoff': 4,'showgrid':False,'showline':False,'fixedrange':True,'color':'rgba(255,255,255,0)'}
     fig2 = go.Figure(data=pdata, layout=playout)
-    customdata=np.array(data[[e for rec in ddset for e in rec['col']]])
-    hovertemplate = ('<br>'.join([f"{n['col'][0].split('_')[-1]:>14} %{{customdata[{i}]:7.2f}} [{n['unit']}]" for i, n in enumerate(ddset)]) + '<extra></extra>')
+    datlist=[e for rec in ddset for e in rec['col']]
+    customdata=np.array(data[datlist])
+    hovertemplate = ('<br>'.join([f"{e.split('_')[-1]:>14} %{{customdata[{datlist.index(e)}]:7.2f}} [{rec['unit']}]" for rec in ddset for e in rec['col']]) + '<extra></extra>')
     fig2.update_traces(customdata=customdata, hovertemplate=hovertemplate)
-    t1 = time.time()
-    print(f"Dauer Berechnung Hovertemplate: {t1-t0}")
+    #t1 = time.time()
+    #print(f"Dauer Berechnung Hovertemplate: {t1-t0}")
 
     return fig2
