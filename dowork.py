@@ -94,7 +94,7 @@ def plot_plotly(
         'hoverlabel':{
             'bgcolor': 'rgba(240,240,240,0.8)',
             'font_family': 'Courier',
-            'font_size':16,
+            'font_size':12,
             'namelength': -1
         },
         'showlegend':True,
