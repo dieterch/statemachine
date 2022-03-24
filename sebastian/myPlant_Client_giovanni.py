@@ -91,7 +91,7 @@ class myPlant_Client:
         if not filters:
             filters = []
 
-        # graphQL querry
+        # graphQL query
         graphQL = """
         {
         assets(
