@@ -11,6 +11,7 @@ warnings.simplefilter(action='ignore', category=UserWarning)
 
 import plotly.graph_objects as go
 import plotly.io as pio
+
 pio.templates.default='simple_white'
 pio.renderers.default = "notebook"
 
@@ -139,3 +140,86 @@ def plot_plotly(
     #print(f"Dauer Berechnung Hovertemplate: {t1-t0}")
 
     return fig2
+
+
+def plotly_verstehen(fsm, startversuch, data):
+
+    playout = {
+        'hovermode':"x unified",
+        'showlegend':True,
+        'legend': { 'yanchor':'top', 'y':0.99,'xanchor':'left', 'x':0.01,'bgcolor': 'rgba(255,255,255,0.4)'},
+        'title_text': f"{fsm._e} -- Start {startversuch['no']} {startversuch['mode']} | {'SUCCESS' if startversuch['success'] else 'FAILED'} | {startversuch['starttime'].round('S')}",
+        'width':1000,
+        'height':600,
+        'hoverlabel':{
+            'bgcolor': 'rgba(240,240,240,0.7)',
+            'font_family': 'Courier',
+            'namelength': -1,
+            },
+        'xaxis':{ 'domain':[0,0.85]},
+        'yaxis':{
+            'title':'PowerAct, SpeedAct',
+            #'color':"#1f77b4",
+            'color':"black",
+            'anchor':"x",
+            'overlaying':"y",'side':"left",'position':0.0,
+            'title_standoff': 4,
+            'range':(0,5000),
+            },
+        'yaxis2':{
+            'title':"PressOil",
+            'color':"#d62728",
+            'anchor':"free",'overlaying':"free",'side':"right",'position':0.85,
+            'title_standoff': 4,
+            'range':(0,10),
+            'showgrid':True,
+            'showline':True
+            },
+        'yaxis3':{
+            'title':"TempOil",
+            'color':"#9467bd",
+            'anchor':"free",'overlaying':"y",'side':"right",'position':0.95,
+            'title_standoff': 4,
+            'range':(0,100),
+            },
+        # 'yaxis4':{
+        #     'title':"SpeedAct",
+        #     'color':"#ff7f0e",
+        #     'anchor':"free",
+        #     'overlaying':'y','side':"right",'position':0.7,
+        #     'range':(0,2000),
+        #     },
+        'yaxis4':{
+            'title':"",
+            'color':"#ffffff",
+            'anchor':"free",
+            'overlaying':'y','side':"right",'position':1.0,
+            'title_standoff': 4,
+            'range':(0,100),
+            'showline':False,
+            'nticks':0
+            },
+    }
+
+    data['hover'] = 60
+
+    pdata = [
+        go.Scattergl(x=data['datetime'],y=data['Power_PowerAct'], name='PowerAct',yaxis="y"), #Power_PowerAct
+        go.Scattergl(x=data['datetime'],y=data['Various_Values_SpeedAct'], name="SpeedAct",yaxis="y"),
+        go.Scattergl(x=data['datetime'],y=data['Hyd_PressOil'],name="PressOil",yaxis="y2"),
+        go.Scattergl(x=data['datetime'],y=data['Hyd_TempOil'],name="TempOil",yaxis="y3"),
+        go.Scattergl(x=data['datetime'],y=data['hover'], line_color='rgba(255,255,255,0)', name="",yaxis="y4"),
+    ]
+
+    #customdata=np.stack((data['Power_PowerAct'], data['Various_Values_SpeedAct']), axis=-1)
+    subdata=data[['Power_PowerAct','Various_Values_SpeedAct','Hyd_PressOil','Hyd_TempOil']]
+    customdata=[tuple(x) for x in subdata.to_numpy()]
+    hovertemplate = ("Power:    %{customdata[0]:5.0f} [kW]<br>" +
+                    "Speed:    %{customdata[1]:5.0f} [rpm]<br>" +
+                    "Oilpress: %{customdata[2]:5.2f} [bar]<br>" +
+                    "Oiltemp:  %{customdata[3]:5.1f} [°C]<br>" +
+                    "<extra></extra>")
+
+    fig3 = go.Figure(data=pdata,layout=playout)
+    fig3.update_traces(customdata=customdata, hovertemplate=hovertemplate)
+    fig3.show()
