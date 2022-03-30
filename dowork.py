@@ -73,7 +73,7 @@ def _add_plotly_trace(i, rec, data, pdata, playout, pside='right', panchor='free
             playout[long_axname].update({'color': rec['color']})
             pdata.append(go.Scattergl(x=data['datetime'], y=data[rec['col'][0]], line_color=rec['color'] ,name=rec['col'][0], yaxis=short_axname))
     else:
-        pdata.appen(go.Scattergl(x=data['datetime'], y=data[rec['col'][0]] ,name=rec['col'][0], yaxis=short_axname))
+        pdata.append(go.Scattergl(x=data['datetime'], y=data[rec['col'][0]] ,name=rec['col'][0], yaxis=short_axname))
 
 def plot_plotly(
         fsm,
