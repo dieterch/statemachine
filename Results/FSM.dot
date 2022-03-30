@@ -26,6 +26,7 @@ digraph G {
     loadramp -> targetoperation [label="Calculated statechange"]
     targetoperation [label="targetoperation"]
     targetoperation -> rampdown [label="1232 Request module off"]
+    targetoperation -> runout [label="1239 Group alarm - shut down"]
     targetoperation -> idle [label="1236 Generator CB opened"]
     rampdown [label="rampdown"]
     rampdown -> coolrun [label="1236 Generator CB opened"]
