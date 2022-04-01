@@ -6,6 +6,7 @@ digraph G {
     standstill -> startpreparation [label="1231 Request module on"]
     startpreparation [label="startpreparation"]
     startpreparation -> starter [label="1249 Starter on"]
+    startpreparation -> standstill [label="1225 Service selector switch Off"]
     startpreparation -> standstill [label="1232 Request module off"]
     starter [label="starter"]
     starter -> speedup [label="3225 Ignition on"]
