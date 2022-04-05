@@ -143,7 +143,7 @@ def update_output(n_clicks, engine):
     else:
         return ""
 
-#modes = ['???','OFF','MANUAL','AUTO']
+#modes = ['undefined','OFF','MAN','AUTO']
 #success = [True,False]
 
 @app.callback(
