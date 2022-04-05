@@ -10,7 +10,7 @@ import warnings; warnings.simplefilter(action='ignore', category=UserWarning)
 
 from dmyplant2 import (
     cred, MyPlant, Engine, 
-    msgFSM, filterFSM, FSMPlot_Start, 
+    FSMOperator, filterFSM, FSMPlot_Start, 
     bokeh_show, dbokeh_chart, add_dbokeh_vlines, get_cycle_data2, 
     disp_result, alarms_pareto, warnings_pareto, states_lines,
     detect_edge_right, detect_edge_left)
@@ -225,7 +225,7 @@ def update_charts(query, start_date, end_date, tab):
     comment = f"{len(fleet)} Engines found." #, selected: {fleet['Engine'].iloc[engine]}"
 
     #e=Engine.from_fleet(mp,motor)
-    #fsm = msgFSM(e, p_from=e['Commissioning Date'], p_to=datetime.now(), successtime=300)
+    #fsm = FSMOperator(e, p_from=e['Commissioning Date'], p_to=datetime.now(), successtime=300)
 
     if tab == 'tab-1-example-graph':
         tabret = dcc.Graph(
