@@ -1,0 +1,7 @@
+#interestingcycles = [0,1,8, 62, 65, 76, 77, 80, 95, 96, 97, 98, 99, 252, 678] # BMW Landshut M4
+interestingcycles = [117] # Forsa Hartmoor M1
+#interestingcycles = [0,64, 66, 82] # Forsa Hartmoor M4
+#interestingcycles = [0] # Pforzheim M4
+#interestingcycles = [17] #
+#interestingcycles = [335] # !!! Bautzen M01 T902, Start von: 08.12.2021 13:14:29 bis: 12.12.2021 00:40:40
+#interestingcycles = [142] # Bautzen M01 T902, Start von: 04.07.2021 15:57:29 bis: 04.07.2021 21:03:40  => Ende nicht erkannt. 
