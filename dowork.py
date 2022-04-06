@@ -42,9 +42,9 @@ def plot_now(
     add_dbokeh_vlines([pl.loc], fig,line_color=lcol, line_dash='solid', line_alpha=0.4)
     add_dbokeh_vlines([pr.loc], fig,line_color=lcol, line_dash='solid', line_alpha=0.4)
 
-    #pp(startversuch['timing']) # ['timings']['start_loadramp'])
-    if 'loadramp' in startversuch['timing']:
-        add_dbokeh_vlines([startversuch['timing']['loadramp'][-1]['end']], fig,line_color='green', line_dash='solid', line_alpha=0.4, line_width=4)
+    #pp(startversuch['startstoptiming'']) # ['timings']['start_loadramp'])
+    if 'loadramp' in startversuch['startstoptiming'']:
+        add_dbokeh_vlines([startversuch['startstoptiming'']['loadramp'][-1]['end']], fig,line_color='green', line_dash='solid', line_alpha=0.4, line_width=4)
 
     return fig
 
