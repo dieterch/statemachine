@@ -143,3 +143,4 @@ dmypy.json
 .xlsx
 .html
 Results/data/
+bokeh_examples/data/
