@@ -15,6 +15,10 @@ import plotly.io as pio
 pio.templates.default='simple_white'
 pio.renderers.default = "notebook"
 
+
+pdef = ['Power_PowerAct','Hyd_PressOil','Hyd_PressOilDif','Hyd_TempOil','TecJet_Lambda1','TecJet_GasDiffPress','Exhaust_TempCylMin','Exhaust_TempCylMax']
+
+
 def plot_now(
         fsm,
         data,
@@ -43,8 +47,8 @@ def plot_now(
     add_dbokeh_vlines([pr.loc], fig,line_color=lcol, line_dash='solid', line_alpha=0.4)
 
     #pp(startversuch['startstoptiming'']) # ['timings']['start_loadramp'])
-    if 'loadramp' in startversuch['startstoptiming'']:
-        add_dbokeh_vlines([startversuch['startstoptiming'']['loadramp'][-1]['end']], fig,line_color='green', line_dash='solid', line_alpha=0.4, line_width=4)
+    if 'loadramp' in startversuch['startstoptiming']:
+        add_dbokeh_vlines([startversuch['startstoptiming']['loadramp'][-1]['end']], fig,line_color='green', line_dash='solid', line_alpha=0.4, line_width=4)
 
     return fig
 
