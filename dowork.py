@@ -5,7 +5,7 @@ import bokeh
 import time
 from bokeh.models import Span, Text, Label
 from IPython.display import HTML, display
-from dmyplant2 import dbokeh_chart, bokeh_show, add_dbokeh_vlines, add_dbokeh_hlines, FSMPlot_Start, detect_edge_left, detect_edge_right
+from dmyplant2 import dbokeh_chart, bokeh_show, add_dbokeh_vlines, add_dbokeh_hlines
 import warnings
 warnings.simplefilter(action='ignore', category=UserWarning)
 
@@ -17,40 +17,6 @@ pio.renderers.default = "notebook"
 
 
 pdef = ['Power_PowerAct','Hyd_PressOil','Hyd_PressOilDif','Hyd_TempOil','TecJet_Lambda1','TecJet_GasDiffPress','Exhaust_TempCylMin','Exhaust_TempCylMax']
-
-
-def plot_now(
-        fsm,
-        data,
-        startversuch,
-        vset, 
-        dset,
-        dfigsize=(16,8)
-    ):
-
-    # vset = []
-    # for rec in dset:
-    #     for d in rec['col']:
-    #         vset.append(d) 
-    # vset = list(set(vset))
-
-    fig = FSMPlot_Start(fsm, startversuch, data, vset, dset, figsize=dfigsize); 
-    #fsm run 2 results
-    lcol='blue'
-    pl, _ = detect_edge_left(data, 'Power_PowerAct', startversuch)
-    pr, _ = detect_edge_right(data, 'Power_PowerAct', startversuch)
-    sl, _ = detect_edge_left(data, 'Various_Values_SpeedAct', startversuch)
-    sr, _ = detect_edge_right(data, 'Various_Values_SpeedAct', startversuch)
-    add_dbokeh_vlines([sl.loc], fig,line_color=lcol, line_dash='solid', line_alpha=0.4)
-    add_dbokeh_vlines([sr.loc], fig,line_color=lcol, line_dash='solid', line_alpha=0.4)
-    add_dbokeh_vlines([pl.loc], fig,line_color=lcol, line_dash='solid', line_alpha=0.4)
-    add_dbokeh_vlines([pr.loc], fig,line_color=lcol, line_dash='solid', line_alpha=0.4)
-
-    #pp(startversuch['startstoptiming'']) # ['timings']['start_loadramp'])
-    if 'loadramp' in startversuch['startstoptiming']:
-        add_dbokeh_vlines([startversuch['startstoptiming']['loadramp'][-1]['end']], fig,line_color='green', line_dash='solid', line_alpha=0.4, line_width=4)
-
-    return fig
 
 
 def _add_plotly_trace(i, rec, data, pdata, playout, pside='right', panchor='free', pposition=0.0):
@@ -127,7 +93,7 @@ def plot_plotly(
     _add_plotly_trace(0, ddset[0], data, pdata, playout, panchor='x', pside='left')
     if len(ddset) > 1:
         for i,graph in enumerate(ddset[1:]):
-            _add_plotly_trace(i+1, graph, data, pdata, playout, panchor='free', pside='right', pposition=float(1-asp*i))
+            _add_plotly_trace(i+1, graph, data, pdata, playout, panchor='free', pside='left', pposition=float(1-asp*i))
 
     #t0 = time.time()
     # Trick für Hover - eine Linie mit Alpha = 0, also unsichtbar hält das hovertemplate
