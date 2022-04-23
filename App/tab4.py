@@ -68,7 +68,7 @@ def update_fig(x=0, lfigures=V.lfigures, plotselection=V.plotdef, vset=V.vset, p
             print("-----------------------------------")
             for i, v in enumerate(fsm.runlogdetail(startversuch, statechanges_only=True)):
                 print(f"{i:3} {v}")
-            print(f"\nall messages during start attempt No.:{vv:4d} leading to state change:")
+            print(f"\nall messages during start attempt No.:{startversuch['no']:4d} leading to state change:")
             print("---------------------------------------------------------------------")
             for i, v in enumerate(fsm.runlogdetail(startversuch, statechanges_only=False)):
                 print(f"{i:3} {v}")
@@ -90,8 +90,6 @@ def start_info(*args):
         rdf = V.fsm.starts
         if not rdf.empty:
             sv = rdf.iloc[sno.value]
-            global vv;
-            vv = sno.value
             summary = pd.DataFrame(sv[startstopFSM.run2filter_content]).T
             r = summary.style.set_table_styles([
                 {'selector':'tbody','props':'font-size:0.7rem; font-weight: bold; text-align:center; background-color: #D3D3D3; ' + \

@@ -14,6 +14,11 @@ from App.common import loading_bar, V
 # tab2
 #########################################
 tab2_out = widgets.Output()
+run2_chkbox = widgets.Checkbox(
+    value=False,
+    description='FSM Run2',
+    disabled=False,
+    indent=True)
 
 def fsm_loadmessages(b):
     with tab2_out:
@@ -44,7 +49,8 @@ def fsm_run(b):
             print()
             V.fsm.run0(enforce=True, silent=False, debug=False)
             V.fsm.run1(silent=False, successtime=300, debug=False) # run Finite State Machine
-            V.fsm.run2(silent = False)
+            if run2_chkbox.value:
+                V.fsm.run2(silent = False)
             V.fsm.store()
             V.rdf = V.fsm.starts
             print()
@@ -103,4 +109,4 @@ b_loadfsm = widgets.Button(
     disabled=True, 
     button_style='')
 b_loadfsm.on_click(fsm_load)
-_tab = VBox([HBox([VBox([el,HBox([t1,t2])]),VBox([b_loadmessages,b_runfsm,b_loadfsm])]),tab2_out])
+_tab = VBox([HBox([VBox([el,HBox([t1,t2,run2_chkbox])]),VBox([b_loadmessages,b_runfsm,b_loadfsm])]),tab2_out])

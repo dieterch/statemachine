@@ -25,8 +25,8 @@ def show_overview(b):
     thefilter = (
         (rda['mode'].isin(mo.value)) & 
         (rda['success'].isin(succ.value)) & 
-        ((rda['count_warnings'] > 0) | ('Warnings' not in alarm_warning.value)) & 
-        ((rda['count_alarms'] > 0) | ('Alarms' not in alarm_warning.value))
+        ((rda['W'] > 0) | ('Warnings' not in alarm_warning.value)) & 
+        ((rda['A'] > 0) | ('Alarms' not in alarm_warning.value))
     )
     rda = rda[thefilter].reset_index(drop='index')
     #rdb = rda

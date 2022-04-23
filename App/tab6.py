@@ -19,13 +19,13 @@ tab6_out = widgets.Output()
 @tab6_out.capture(clear_output=True)
 def showtecjet(b):
     dfigsize = (16,8)
-    if V.fsm is not None:
+    if ((V.fsm is not None) and V.fsm.starts.iloc[0]['run2']):
         rda = V.fsm.starts.reset_index(drop='index')
         thefilter = (
             (rda['mode'].isin(tab3.mo.value)) & 
             (rda['success'].isin(tab3.succ.value)) & 
-            ((rda['count_warnings'] > 0) | ('Warnings' not in tab3.alarm_warning.value)) & 
-            ((rda['count_alarms'] > 0) | ('Alarms' not in tab3.alarm_warning.value))
+            ((rda['W'] > 0) | ('Warnings' not in tab3.alarm_warning.value)) & 
+            ((rda['A'] > 0) | ('Alarms' not in tab3.alarm_warning.value))
         )
         rda = rda[thefilter].reset_index(drop='index')
         #rdb = rda
@@ -49,8 +49,8 @@ def showtecjet(b):
             dr2set2 = [
                     #{'col':['targetload'],'ylim': [4100, 4700], 'color':'red', 'unit':'kW'},
                     {'col':['bmep'],'ylim': [22, 26], 'color':'red', 'unit':'bar'},
-                    {'col':['TJ_GasDiffPressMin'],'ylim': [0, 100], 'color':'blue', 'unit':'mbar'},
-                    {'col':['TJ_Pos_at_Min'],'ylim': [0, 1000], 'color':'purple', 'unit':'mbar'},
+                    {'col':['TJ_GasDiffPressMin'],'ylim': [-20, 80], 'color':'blue', 'unit':'mbar'},
+                    {'col':['TJ_Pos_at_Min'],'ylim': [0, 600], 'color':'purple', 'unit':'%'},
                     #{'col':['TJ_GasPress1_at_Min'],'ylim': [800, 1300], 'color':'dodgerblue', 'unit':'mbar'},
                     #{'col':['TJ_GasTemp1_at_Min'],'ylim': [0, 100], 'color':'red', 'unit':'°C'},
                     {'col':['no'],'_ylim':(0,1000), 'color':['rgba(0,0,0,0.05)'] },
@@ -70,13 +70,13 @@ def showtecjet(b):
 @tab6_out.capture(clear_output=True)
 def showtemp(b):
     dfigsize = (20,12)
-    if V.fsm is not None:
+    if ((V.fsm is not None) and V.fsm.starts.iloc[0]['run2']):
         rda = V.fsm.starts.reset_index(drop='index')
         thefilter = (
             (rda['mode'].isin(tab3.mo.value)) & 
             (rda['success'].isin(tab3.succ.value)) & 
-            ((rda['count_warnings'] > 0) | ('Warnings' not in tab3.alarm_warning.value)) & 
-            ((rda['count_alarms'] > 0) | ('Alarms' not in tab3.alarm_warning.value))
+            ((rda['W'] > 0) | ('Warnings' not in tab3.alarm_warning.value)) & 
+            ((rda['A'] > 0) | ('Alarms' not in tab3.alarm_warning.value))
         )
         rda = rda[thefilter].reset_index(drop='index')
         #rdb = rda
@@ -109,13 +109,13 @@ def showtemp(b):
 @tab6_out.capture(clear_output=True)
 def showsync(b):
     dfigsize = (20,12)
-    if V.fsm is not None:
+    if ((V.fsm is not None) and V.fsm.starts.iloc[0]['run2']):
         rda = V.fsm.starts.reset_index(drop='index')
         thefilter = (
             (rda['mode'].isin(tab3.mo.value)) & 
             (rda['success'].isin(tab3.succ.value)) & 
-            ((rda['count_warnings'] > 0) | ('Warnings' not in tab3.alarm_warning.value)) & 
-            ((rda['count_alarms'] > 0) | ('Alarms' not in tab3.alarm_warning.value))
+            ((rda['W'] > 0) | ('Warnings' not in tab3.alarm_warning.value)) & 
+            ((rda['A'] > 0) | ('Alarms' not in tab3.alarm_warning.value))
         )
         rda = rda[thefilter].reset_index(drop='index')
         global rdb
@@ -133,7 +133,7 @@ def showsync(b):
                 #{'col':['TempOil_rpm_max','TempCoolWat_rpm_max'],'_ylim': [0, 100], 'color':['crimson','dodgerblue'], 'unit':'mbar'},
                 {'col':['TempOil_rpm_max'],'_ylim': [0, 100], 'color':'crimson', 'unit':'°C'},
                 {'col':['TempCoolWat_rpm_max'],'_ylim': [0, 100], 'color':'dodgerblue', 'unit':'-'},
-                {'col':['count_warnings'],'_ylim':(-1,200), 'color':['rgba(255,165,0,0.3)'] },
+                {'col':['W'],'_ylim':(-1,200), 'color':['rgba(255,165,0,0.3)'] },
                 {'col':['no'],'_ylim':(0,1000), 'color':['rgba(0,0,0,0.05)'] }
             ]
             dr2set3 = equal_adjust(dr2set3, rde, do_not_adjust=['no'], minfactor=0.95, maxfactor=1.2)
@@ -150,7 +150,7 @@ def showsync(b):
                 #{'col':['TempOil_rpm_max','TempCoolWat_rpm_max'],'_ylim': [0, 100], 'color':['crimson','dodgerblue'], 'unit':'mbar'},
                 #{'col':['TempOil_rpm_max'],'_ylim': [0, 100], 'color':'crimson', 'unit':'mbar'},
                 {'col':['TempCoolWat_rpm_max'],'_ylim': [0, 100], 'color':'dodgerblue', 'unit':'°C'},
-                {'col':['count_warnings'],'_ylim':(-1,200), 'color':['rgba(255,165,0,0.3)'] },
+                {'col':['W'],'_ylim':(-1,200), 'color':['rgba(255,165,0,0.3)'] },
                 {'col':['no'],'_ylim':(0,1000), 'color':['rgba(0,0,0,0.05)'] },
             ]
             dr2set3 = equal_adjust(dr2set3, rde, do_not_adjust=['no'], minfactor=0.95, maxfactor=1.2)

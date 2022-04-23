@@ -9,10 +9,6 @@ from dmyplant2 import cred, MyPlant, Engine, cplotdef
 cred()
 mp = MyPlant(3600)
 
-    # FSMOperator, startstopFSM, FSM_splot, FSM_splotBC, FSM_VLine, FSM_add_Notations, FSM_add_Alarms, FSM_add_Warnings,
-    # bokeh_show, dbokeh_chart, add_dbokeh_vlines, get_cycle_data2, disp_result, disp_alarms, disp_warnings,
-    # cvset, ,equal_adjust, count_columns, load_data, get_cycle_data, get_cycle_data2)
-
 # DEFINITION OF PLOTS & OVERVIEW
 def myfigures(e = None):
     def fake_e(dataItem):
@@ -71,9 +67,9 @@ def overview_figure():
         {'col':['speedup'],'_ylim':(-100,200), 'color':'orange'},
         {'col':['synchronize'],'_ylim':(-20,400)},
         {'col':['startpreparation'],'_ylim':(-1000,800)},
-        {'col':['count_warnings','count_alarms','isuccess'],'_ylim':(-1,200), 'color':['rgba(255,165,0,0.3)','rgba(255,0,0,0.3)','rgba(0,128,0,0.2)'] },
+        {'col':['W','A','isuccess'],'_ylim':(-1,200), 'color':['rgba(255,165,0,0.3)','rgba(255,0,0,0.3)','rgba(0,128,0,0.2)'] },
         {'col':['no'],'_ylim':(0,1000), 'color':['rgba(0,0,0,0.1)'] },
-        #{'col':['count_warnings','count_alarms','no'],'ylim':(-1,200), 'color':['rgba(255,165,0,0.3)','rgba(255,0,0,0.3)','rgba(0,0,0,0.1)'] }
+        #{'col':['W','A','no'],'ylim':(-1,200), 'color':['rgba(255,165,0,0.3)','rgba(255,0,0,0.3)','rgba(0,0,0,0.1)'] }
         ]
     }
 
@@ -103,7 +99,6 @@ def save_query_list(query_list):
 
 @dataclass
 class V:
-    # global constants
     hh = '500px' # window height
     fleet = None
     e = None
