@@ -109,7 +109,6 @@ class V:
     query_list = []
 
 def init_globals():
-    V.fleet = None
     V.e = None
     V.lfigures = myfigures()
     V.plotdef, V.vset = cplotdef(mp, V.lfigures)

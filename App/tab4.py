@@ -8,7 +8,7 @@ import ipywidgets as widgets
 from ipywidgets import AppLayout, Button, Text, Select, Tab, Layout, VBox, HBox, Label, HTML, interact, interact_manual, interactive, IntSlider, Output
 from IPython.display import display
 from dmyplant2 import (
-    cred, MyPlant, FSMOperator, startstopFSM, cplotdef, get_cycle_data2, get_cycle_data3, count_columns, 
+    cred, MyPlant, FSMOperator, startstopFSM, cplotdef, load_data, get_cycle_data2, get_cycle_data3, count_columns, 
     FSM_splot, FSM_add_Notations, disp_alarms, disp_warnings, FSM_add_Alarms,
     FSM_add_Warnings, bokeh_show, cvset
 )
@@ -41,7 +41,7 @@ def update_fig(x=0, lfigures=V.lfigures, plotselection=V.plotdef, vset=V.vset, p
         print(f'Please Wait, loading data for Start No. {startversuch.no}')
         try:
             data = get_cycle_data3(fsm, startversuch, cycletime=1, silent=True, p_data=vset, t_range=plot_range)
-            data['power_diff'] = pd.Series(np.gradient(data['Power_PowerAct']))
+            #data['power_diff'] = pd.Series(np.gradient(data['Power_PowerAct']))
             tab4_out.clear_output()
             # PLotter
             ftitle = f"{fsm._e} ----- Start {startversuch['no']} {startversuch['mode']} | {'SUCCESS' if startversuch['success'] else 'FAILED'} | {startversuch['starttime'].round('S')}"
@@ -112,7 +112,20 @@ def start_info(*args):
                 links += f'{ll} | '
             start_table.value = links + '<br>' + r
 start_info()
-        
+
+def start_run2(b):
+    if V.fsm is not None:
+        rdf = V.fsm.starts
+        if not rdf.empty:
+            sv = rdf.iloc[sno.value]
+            V.fsm.run2_collectors_setup()
+            vset, tfrom, tto = V.fsm.run2_collectors_register(sv)
+            ldata = load_data(V.fsm, cycletime=1, tts_from=tfrom, tts_to=tto, silent=True, p_data=vset, p_forceReload=False, p_suffix='_individual', debug=False)
+            V.fsm.results = V.fsm.run2_collectors_collect(sv, V.fsm.results, ldata)
+            phases = list(V.fsm.results['starts'][sno]['startstoptiming'].keys())
+            V.fsm.self.startstopHandler._harvest_timings(V.fsm.results['starts'][sno], phases, V.fsm.results)
+            start_info() 
+
 ###############
 # tab4 widgets
 ###############
@@ -129,6 +142,9 @@ sno.observe(start_info, 'value')
 
 tshowplots = widgets.Button(description='Plots',disabled=False, button_style='primary')
 tshowplots.on_click(show_plots)
+
+b_run2 = widgets.Button(description='run2',disabled=False, tooltip='Run2 Results for the selected start', button_style='primary')
+b_run2.on_click(start_run2)
 
 plotselection = widgets.SelectMultiple( 
     options=list(myfigures().keys()), 
@@ -149,7 +165,7 @@ time_range = widgets.IntRangeSlider(
     orientation='horizontal',
     readout=True,
     readout_format='d',
-    layout=widgets.Layout(width='500px')
+    layout=widgets.Layout(width='603px')
 )
 time_range.observe(start_info,'value')
 
@@ -161,7 +177,7 @@ _tab = VBox([
                 ]),
                 plotselection
             ]),
-            time_range,
+            HBox([time_range, b_run2]),
             start_table,
             tab4_out
         ]);
