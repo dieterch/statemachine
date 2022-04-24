@@ -8,7 +8,7 @@ import ipywidgets as widgets
 from ipywidgets import AppLayout, Button, Text, Select, Tab, Layout, VBox, HBox, Label, HTML, interact, interact_manual, interactive, IntSlider, Output
 from IPython.display import display
 from dmyplant2 import (
-    cred, MyPlant, FSMOperator, startstopFSM, cplotdef, get_cycle_data2, count_columns, 
+    cred, MyPlant, FSMOperator, startstopFSM, cplotdef, get_cycle_data2, get_cycle_data3, count_columns, 
     FSM_splot, FSM_add_Notations, disp_alarms, disp_warnings, FSM_add_Alarms,
     FSM_add_Warnings, bokeh_show, cvset
 )
@@ -40,7 +40,7 @@ def update_fig(x=0, lfigures=V.lfigures, plotselection=V.plotdef, vset=V.vset, p
         startversuch = rdfs.iloc[0]
         print(f'Please Wait, loading data for Start No. {startversuch.no}')
         try:
-            data = get_cycle_data2(fsm, startversuch, cycletime=1, silent=True, p_data=vset, t_range=plot_range)
+            data = get_cycle_data3(fsm, startversuch, cycletime=1, silent=True, p_data=vset, t_range=plot_range)
             data['power_diff'] = pd.Series(np.gradient(data['Power_PowerAct']))
             tab4_out.clear_output()
             # PLotter
