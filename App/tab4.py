@@ -92,18 +92,18 @@ def start_info(*args):
             sv = rdf.iloc[sno.value]
             summary = pd.DataFrame(sv[startstopFSM.run2filter_content]).T
             r = summary.style.set_table_styles([
-                {'selector':'tbody','props':'font-size:0.7rem; font-weight: bold; text-align:center; background-color: #D3D3D3; ' + \
+                {'selector':'th,tbody','props':'font-size:0.5rem; font-weight: bold; text-align:center; background-color: #D3D3D3; ' + \
                                         'border: 0px solid black; border-collapse: collapse; margin: 0px; padding: 0px;'},
                 {'selector':'td','props':'font-size:0.7rem; text-align:center; min-width: 58px;'}]
             ).format(
-                precision=0,
+                precision=2,
                 na_rep='-',
-                formatter={
-                    'starter': "{:.1f}",
-                    'idle': "{:.1f}",
-                    'ramprate':"{:.2f}",
-                    'runout': lambda x: f"{x:0.1f}"
-                }
+#                formatter={
+#                    'starter': "{:.1f}",
+#                    'idle': "{:.1f}",
+#                    'ramprate':"{:.2f}",
+#                    'runout': lambda x: f"{x:0.1f}"
+#                }
             ).hide().to_html()
             links = 'links to Myplant: | '
             time_new_start, time_new_end = calc_time_range(sv)
