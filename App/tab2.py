@@ -2,7 +2,7 @@ import os
 import sys
 import pickle
 import pandas as pd; pd.options.mode.chained_assignment = None
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 import ipywidgets as widgets
 from ipywidgets import AppLayout, Button, Text, Select, Tab, Layout, VBox, HBox, Label, HTML, interact, interact_manual, interactive, IntSlider, Output
 from IPython.display import display
@@ -82,6 +82,20 @@ def fsm_load(b):
         print(f"{'Starting reliability raw:':>25} {V.rdf[V.rdf['success'] == 'success'].shape[0]/(V.rdf.shape[0])*100.0:3.1f}% ")
         print(f"{'Starting reliability:':>25} {V.rdf[V.rdf['success'] == 'success'].shape[0]/(V.rdf.shape[0]-V.rdf[V.rdf['success'] == 'undefined'].shape[0])*100.0:3.1f}% ")
 
+def fsm_init(b):
+    try:
+        V.fsm = FSMOperator(V.e, p_from=pd.to_datetime(date.today - timedelta(days=2)), p_to=to_datetime(date.today))
+        if not V.fsm.exists:
+            b_loadfsm.disabled = True
+            b_loadfsm.button_style = ''
+        else:
+            b_loadfsm.disabled = False
+            b_loadfsm.button_style = 'primary'
+    except Exception as err:
+        tab2_out.clear_output()
+        print('Error: ',str(err))
+    
+
 ###############
 # tab2 widgets
 ###############
@@ -112,4 +126,11 @@ b_loadfsm = widgets.Button(
     disabled=True, 
     button_style='')
 b_loadfsm.on_click(fsm_load)
-_tab = VBox([HBox([VBox([el,HBox([t1,t2,run2_chkbox])]),VBox([b_loadmessages,b_runfsm,b_loadfsm])]),tab2_out])
+
+b_initfsm = widgets.Button(
+    description='Init FSM',
+    disabled=False, 
+    button_style='')
+b_initfsm.on_click(fsm_init)
+
+_tab = VBox([HBox([VBox([el,HBox([t1,t2,run2_chkbox])]),VBox([b_loadmessages,b_runfsm,b_loadfsm, b_initfsm])]),tab2_out])
