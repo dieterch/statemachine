@@ -7,7 +7,7 @@ from ipywidgets import AppLayout, Button, Text, Select, Tab, Layout, VBox, HBox,
 from dmyplant2 import cred, MyPlant, Engine, cplotdef
 
 cred()
-mp = MyPlant(3600)
+mp = MyPlant(0)
 
 # DEFINITION OF PLOTS & OVERVIEW
 def myfigures(e = None):

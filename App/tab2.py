@@ -62,6 +62,45 @@ def fsm_run(b):
             print(f"Starting reliability raw: {V.rdf[V.rdf['success'] == 'success'].shape[0]/(V.rdf.shape[0])*100.0:3.1f}% ")
             print(f"Starting reliability: {V.rdf[V.rdf['success'] == 'success'].shape[0]/(V.rdf.shape[0]-V.rdf[V.rdf['success'] == 'undefined'].shape[0])*100.0:3.1f}% ")
 
+def fsm_run0(b):
+    motor = V.fleet.iloc[int(tab1.selno.value)]
+    with tab2_out:
+        tab2_out.clear_output()
+        if V.fsm is not None:
+            print()
+            V.fsm.run0(enforce=True, silent=False, debug=False)
+            print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
+
+def fsm_run1(b):
+    motor = V.fleet.iloc[int(tab1.selno.value)]
+    with tab2_out:
+        tab2_out.clear_output()
+        if V.fsm is not None:
+            print()
+            V.fsm.run1(silent=False, successtime=300, debug=False) # run Finite State Machine
+            print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
+            V.rdf = V.fsm.starts
+            print()
+            print(f"Starts: {V.rdf.shape[0]}") 
+            print(f"Successful: {V.rdf[V.rdf['success'] == 'success'].shape[0]}, Failed: {V.rdf[V.rdf['success'] == 'failed'].shape[0]}, Undefined: {V.rdf[V.rdf['success'] == 'undefined'].shape[0]}")
+            print(f"Starting reliability raw: {V.rdf[V.rdf['success'] == 'success'].shape[0]/(V.rdf.shape[0])*100.0:3.1f}% ")
+            print(f"Starting reliability: {V.rdf[V.rdf['success'] == 'success'].shape[0]/(V.rdf.shape[0]-V.rdf[V.rdf['success'] == 'undefined'].shape[0])*100.0:3.1f}% ")
+
+def fsm_run2(b):
+    motor = V.fleet.iloc[int(tab1.selno.value)]
+    with tab2_out:
+        tab2_out.clear_output()
+        if V.fsm is not None:
+            print()
+            V.fsm.run2(silent = False)
+            print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
+            V.fsm.store()
+            V.rdf = V.fsm.starts
+            print()
+            print(f"Starts: {V.rdf.shape[0]}") 
+            print(f"Successful: {V.rdf[V.rdf['success'] == 'success'].shape[0]}, Failed: {V.rdf[V.rdf['success'] == 'failed'].shape[0]}, Undefined: {V.rdf[V.rdf['success'] == 'undefined'].shape[0]}")
+            print(f"Starting reliability raw: {V.rdf[V.rdf['success'] == 'success'].shape[0]/(V.rdf.shape[0])*100.0:3.1f}% ")
+            print(f"Starting reliability: {V.rdf[V.rdf['success'] == 'success'].shape[0]/(V.rdf.shape[0]-V.rdf[V.rdf['success'] == 'undefined'].shape[0])*100.0:3.1f}% ")
 
 def fsm_load(b):
     with tab2_out:
@@ -121,6 +160,24 @@ b_runfsm = widgets.Button(
     button_style='')
 b_runfsm.on_click(fsm_run)
 
+b_runfsm0 = widgets.Button(
+    description='Run FSM0',
+    disabled=False, 
+    button_style='success')
+b_runfsm0.on_click(fsm_run0)
+
+b_runfsm1 = widgets.Button(
+    description='Run FSM1',
+    disabled=False, 
+    button_style='success')
+b_runfsm1.on_click(fsm_run1)
+
+b_runfsm2 = widgets.Button(
+    description='Run FSM2',
+    disabled=False, 
+    button_style='success')
+b_runfsm2.on_click(fsm_run2)
+
 b_loadfsm = widgets.Button(
     description='Load FSM',
     disabled=True, 
@@ -133,4 +190,4 @@ b_initfsm = widgets.Button(
     button_style='')
 b_initfsm.on_click(fsm_init)
 
-_tab = VBox([HBox([VBox([el,HBox([t1,t2,run2_chkbox])]),VBox([b_loadmessages,b_runfsm,b_loadfsm, b_initfsm])]),tab2_out])
+_tab = VBox([HBox([VBox([el,HBox([t1,t2,run2_chkbox])]),VBox([b_loadmessages,b_runfsm,b_runfsm0,b_runfsm1,b_runfsm2,b_loadfsm, b_initfsm])]),tab2_out])
