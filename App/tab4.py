@@ -40,7 +40,8 @@ def update_fig(x=0, lfigures=V.lfigures, plotselection=V.plotdef, vset=V.vset, p
         startversuch = rdfs.iloc[0]
         print(f'Please Wait, loading data for Start No. {startversuch.no}')
         try:
-            data = get_cycle_data3(fsm, startversuch, cycletime=1, silent=True, p_data=vset, t_range=plot_range)
+            #data = get_cycle_data3(fsm, startversuch, cycletime=1, silent=True, p_data=vset, t_range=plot_range)
+            data = get_cycle_data2(fsm, startversuch, cycletime=1, silent=True, p_data=vset, t_range=plot_range)
             #data['power_diff'] = pd.Series(np.gradient(data['Power_PowerAct']))
             tab4_out.clear_output()
             # PLotter
@@ -90,6 +91,7 @@ def start_info(*args):
         rdf = V.fsm.starts
         if not rdf.empty:
             sv = rdf.iloc[sno.value]
+            ltitle = f"||| Start No {sv['no']} {sv['starttime'].round('S')} to {sv['endtime'].round('S')}"
             summary = pd.DataFrame(sv[startstopFSM.run2filter_content]).T
             r = summary.style.set_table_styles([
                 {'selector':'th,tbody','props':'font-size:0.5rem; font-weight: bold; text-align:center; background-color: #D3D3D3; ' + \
@@ -110,7 +112,7 @@ def start_info(*args):
             for doplot in plotselection.options:
                 ll = V.e.myplant_workbench_link(time_new_start, time_new_end, V.e.get_dataItems(dat=cvset(mp,V.lfigures[doplot])),doplot)
                 links += f'{ll} | '
-            start_table.value = links + '<br>' + r
+            start_table.value = links + ltitle + '<br>' + r
 start_info()
 
 def start_run2(b):
