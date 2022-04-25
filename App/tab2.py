@@ -190,4 +190,19 @@ b_initfsm = widgets.Button(
     button_style='')
 b_initfsm.on_click(fsm_init)
 
-_tab = VBox([HBox([VBox([el,HBox([t1,t2,run2_chkbox])]),VBox([b_loadmessages,b_runfsm,b_runfsm0,b_runfsm1,b_runfsm2,b_loadfsm, b_initfsm])]),tab2_out])
+_tab = HBox([
+            VBox([
+                el,
+                HBox([t1,t2,run2_chkbox]),
+                tab2_out
+            ]),
+            VBox([
+                b_loadmessages,
+                b_runfsm,
+                b_runfsm0,
+                b_runfsm1,
+                b_runfsm2,
+                b_loadfsm, 
+                b_initfsm
+            ])
+        ])
