@@ -1,12 +1,12 @@
 import os
+import sys
 import pickle
 import pandas as pd; pd.options.mode.chained_assignment = None
 from datetime import datetime, date
 import ipywidgets as widgets
 from ipywidgets import AppLayout, Button, Text, Select, Tab, Layout, VBox, HBox, Label, HTML, interact, interact_manual, interactive, IntSlider, Output
 from IPython.display import display
-from dmyplant2 import cred, MyPlant
-from dmyplant2 import FSMOperator #, Engine, cplotdef
+from dmyplant2 import cred, MyPlant, FSMOperator, get_size
 from App import tab1
 from App.common import loading_bar, V
 
@@ -48,9 +48,12 @@ def fsm_run(b):
         if V.fsm is not None:
             print()
             V.fsm.run0(enforce=True, silent=False, debug=False)
+            print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
             V.fsm.run1(silent=False, successtime=300, debug=False) # run Finite State Machine
+            print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
             if run2_chkbox.value:
                 V.fsm.run2(silent = False)
+                print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
             V.fsm.store()
             V.rdf = V.fsm.starts
             print()
