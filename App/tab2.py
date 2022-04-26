@@ -74,7 +74,7 @@ def fsm_run0(b):
 def fsm_run1(b):
     motor = V.fleet.iloc[int(tab1.selno.value)]
     with tab2_out:
-        tab2_out.clear_output()
+        #tab2_out.clear_output()
         if V.fsm is not None:
             print()
             V.fsm.run1(silent=False, successtime=300, debug=False) # run Finite State Machine
@@ -89,10 +89,10 @@ def fsm_run1(b):
 def fsm_run2(b):
     motor = V.fleet.iloc[int(tab1.selno.value)]
     with tab2_out:
-        tab2_out.clear_output()
+        #tab2_out.clear_output()
         if V.fsm is not None:
             print()
-            V.fsm.run2(silent = False)
+            V.fsm.run2(silent = False, debug=True)
             print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
             V.fsm.store()
             V.rdf = V.fsm.starts
