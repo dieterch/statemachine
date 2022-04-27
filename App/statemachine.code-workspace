@@ -1,0 +1,13 @@
+{
+	"folders": [
+		{
+			"path": ".."
+		},
+		{
+			"path": "..\\..\\dmyplant4"
+		}
+	],
+	"settings": {
+		"graphviz-interactive-preview.renderLockAdditionalTimeout": -1
+	}
+}
