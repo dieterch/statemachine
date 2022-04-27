@@ -38,6 +38,20 @@ def do_lookupDI(b):
         df = df[~df.apply(lambda x: sfun(x), axis=1)].reset_index()
     display(df.style.hide())
 
+@tab5_out.capture(clear_output=True)
+def do_save_messages(but):
+    if V.fsm is not None:
+        if '_messages' in V.fsm.__dict__:
+            print()
+            print('Please Wait ...')
+            display(loading_bar)
+            mfn = V.e._fname + '_messages.txt'
+            print(f'saving messages to {mfn}')
+            V.fsm.save_messages(mfn)
+            tab5_out.clear_output()
+        else:
+            print()
+            print('Please Select an Engine and load messages first.')
     
 ###############
 # tab5 widgets
@@ -63,7 +77,6 @@ txt_lookup_chbx = widgets.Checkbox(
     disabled=False,
     indent=False
 )
-    
 lookup_button = Button(
     description='Lookup DataItems',
     disabled=False,
@@ -82,4 +95,19 @@ reload_button = Button(
 )
 reload_button.on_click(do_refresh)
 
-_tab = VBox([reload_button,HBox([txt_lookup, txt_lookup_exclude, lookup_button, txt_lookup_chbx]), tab5_out])
+save_messages = Button(
+    description='Save All Messages',
+    disabled=False,
+    button_style='',
+    tooltip='Store all messages into the engine data Folder',
+    icon='floppy-disk', # (FontAwesome names without the `fa-` prefix)
+)
+save_messages.on_click(do_save_messages)
+
+spacer = HTML(
+    value="<hr>",
+    placeholder='',
+    description='',
+)
+
+_tab = VBox([HBox([reload_button,save_messages]),spacer,HBox([txt_lookup, txt_lookup_exclude, lookup_button, txt_lookup_chbx]), tab5_out])

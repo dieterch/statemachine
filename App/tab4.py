@@ -29,13 +29,14 @@ def calc_time_range(sv):
     return tns, tne
 
 
-def update_fig(x=0, lfigures=V.lfigures, plotselection=V.plotdef, vset=V.vset, plot_range=(0,100), debug=False, fsm=V.fsm):
+def update_fig(x=0, lfigures=V.lfigures, plotselection=V.plotdef, vset=V.vset, plot_range=(0,100), debug=False, fsm=V.fsm, VSC=False):
     rdfs = V.rdf[V.rdf.no == x]
     if not rdfs.empty:
 
-        with tab4_out:
-            tab4_out.clear_output()
-            display(loading_bar)
+        if not VSC:
+            with tab4_out:
+                tab4_out.clear_output()
+                display(loading_bar)
 
         startversuch = rdfs.iloc[0]
         print(f'Please Wait, loading data for Start No. {startversuch.no}')
@@ -43,7 +44,8 @@ def update_fig(x=0, lfigures=V.lfigures, plotselection=V.plotdef, vset=V.vset, p
             #data = get_cycle_data3(fsm, startversuch, cycletime=1, silent=True, p_data=vset, t_range=plot_range)
             data = get_cycle_data2(fsm, startversuch, cycletime=1, silent=True, p_data=vset, t_range=plot_range)
             #data['power_diff'] = pd.Series(np.gradient(data['Power_PowerAct']))
-            tab4_out.clear_output()
+            if not VSC:
+                tab4_out.clear_output()
             # PLotter
             ftitle = f"{fsm._e} ----- Start {startversuch['no']} {startversuch['mode']} | {startversuch['success']} | {startversuch['starttime'].round('S')}"
             fig_handles = []

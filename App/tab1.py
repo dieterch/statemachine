@@ -2,6 +2,7 @@ import os
 import pickle
 import pandas as pd; pd.options.mode.chained_assignment = None
 import ipywidgets as widgets
+from IPython.display import display
 from dmyplant2 import cred, MyPlant
 from .common import V, get_query_list, save_query_list
 
@@ -44,6 +45,19 @@ def sbcb(but):
     elst = do_lookup(tdd.value)
     es.options = elst
     # es.value = elst[0]
+    print()
+    display(V.fleet[:20].T
+        .style
+        .set_table_styles([
+                {'selector':'th,tbody','props':'font-size:0.5rem; font-weight: bold; text-align:left; ' + \
+                                        'border: 0px solid black; border-collapse: collapse; margin: 0px; padding: 0px;'},
+                {'selector':'td','props':'font-size:0.7rem; text-align:left; min-width: 30px; '}]
+            )
+        .format(
+            precision=2,
+            na_rep='-'
+        ).
+        hide())
     if not tdd.value in V.query_list:
         V.query_list.append(tdd.value)
     save_query_list(V.query_list)
@@ -81,7 +95,10 @@ selno = widgets.Text(
     disabled=True, 
     layout=widgets.Layout(width='200px'))
 
-sb = widgets.Button(description='Lookup',disabled=False, button_style='primary')
+sb = widgets.Button(
+    description='Lookup',
+    disabled=False, 
+    button_style='primary')
 sb.on_click(sbcb)
 
 _tab = widgets.VBox([
