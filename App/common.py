@@ -99,7 +99,7 @@ def save_query_list(query_list):
 
 @dataclass
 class V:
-    hh = '900px' # window height
+    hh = '1000px' # window height
     fleet = None
     e = None
     lfigures = myfigures()
