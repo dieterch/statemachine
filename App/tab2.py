@@ -75,6 +75,9 @@ def fsm_results(b):
                 print(f"Starting reliability: {V.rdf[V.rdf['success'] == 'success'].shape[0]/(V.rdf.shape[0]-V.rdf[V.rdf['success'] == 'undefined'].shape[0])*100.0:3.1f}% ")
 
             if len(V.fsm.results['run2_failed']) > 0:
+                print()
+                print('unsucessful run2 data collection:')
+                print('---------------------------------')
                 display(pd.DataFrame(V.fsm.results['run2_failed'])[V.fsm.startstopHandler.run2filter_content].style.hide())
 
 def fsm_run0(b):
@@ -93,6 +96,7 @@ def fsm_run1(b):
             print()
             V.fsm.run1(silent=False, successtime=300, debug=False) # run Finite State Machine
             print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
+            V.rdf = V.fsm.starts
 
 def fsm_run2(b):
     motor = V.fleet.iloc[int(tab1.selno.value)]
@@ -102,7 +106,7 @@ def fsm_run2(b):
             print()
             V.fsm.run2(silent = False, debug=True)
             print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
-            V.fsm.store()
+            V.rdf = V.fsm.starts
 
 def fsm_store(b):
     with tab2_out:
