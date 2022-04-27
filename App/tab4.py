@@ -45,7 +45,7 @@ def update_fig(x=0, lfigures=V.lfigures, plotselection=V.plotdef, vset=V.vset, p
             #data['power_diff'] = pd.Series(np.gradient(data['Power_PowerAct']))
             tab4_out.clear_output()
             # PLotter
-            ftitle = f"{fsm._e} ----- Start {startversuch['no']} {startversuch['mode']} | {'SUCCESS' if startversuch['success'] else 'FAILED'} | {startversuch['starttime'].round('S')}"
+            ftitle = f"{fsm._e} ----- Start {startversuch['no']} {startversuch['mode']} | {startversuch['success']} | {startversuch['starttime'].round('S')}"
             fig_handles = []
             for doplot in plotselection:
                 dset = lfigures[doplot]
