@@ -24,6 +24,7 @@ def myfigures(e = None):
         ],
         'tecjet' : [
         {'col':['Power_SetPower','Power_PowerAct'], 'ylim':(0,5000), 'color':['lightblue','red'], 'unit':'kW'},
+        {'col':['bmep'], 'ylim':(-10,40), 'color':'orange', 'unit':'bar'},
         {'col':['Various_Values_SpeedAct'],'ylim': [0, 2500], 'color':'blue', 'unit':'rpm'},
         {'col':['Ignition_ITPAvg'],'ylim': [-10, 30], 'color':'olivedrab', 'unit':'°KW'},
         {'col':['TecJet_Lambda1'],'ylim': [0, 3], 'color':'rgba(255,165,0,0.4)', 'unit':'-'},

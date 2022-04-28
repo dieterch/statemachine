@@ -43,7 +43,8 @@ def update_fig(x=0, lfigures=V.lfigures, plotselection=V.plotdef, vset=V.vset, p
         try:
             #data = get_cycle_data3(fsm, startversuch, cycletime=1, silent=True, p_data=vset, t_range=plot_range)
             data = get_cycle_data2(fsm, startversuch, cycletime=1, silent=True, p_data=vset, t_range=plot_range)
-            #data['power_diff'] = pd.Series(np.gradient(data['Power_PowerAct']))
+            data['bmep'] = data.apply(lambda x: V.fsm._e._calc_BMEP(x['Power_PowerAct'], V.fsm._e.Speed_nominal), axis=1)
+            data['power_diff'] = pd.Series(np.gradient(data['Power_PowerAct']))
             if not VSC:
                 tab4_out.clear_output()
             # PLotter

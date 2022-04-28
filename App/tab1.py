@@ -56,8 +56,7 @@ def sbcb(but):
         .format(
             precision=2,
             na_rep='-'
-        ).
-        hide())
+        ))
     if not tdd.value in V.query_list:
         V.query_list.append(tdd.value)
     save_query_list(V.query_list)
