@@ -97,12 +97,12 @@ def showtemp(b):
             fig4 = dbokeh_chart(rde, dr2set3, style='both', figsize=dfigsize ,title=ntitle);
             bokeh_show(fig4)
 
+            print()
+            display(rde[['no','ExhTempCylMax','ExhSpread_at_Max','Power_at_ExhTempCylMax']].describe()
+                        .style.format(precision=2, na_rep='-'))            
+
             display(rde[['no','ExhTempCylMax','ExhSpread_at_Max','Power_at_ExhTempCylMax']]
-                .style
-                .format(
-                precision=2,
-                na_rep='-',
-            ).hide())
+                        .style.format(precision=2,na_rep='-').hide())
     else:
         print('No Data available.')
 
