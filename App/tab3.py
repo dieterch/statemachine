@@ -7,7 +7,7 @@ import ipywidgets as widgets
 from IPython.display import display
 from dmyplant2 import cred, MyPlant
 from dmyplant2 import FSMOperator, equal_adjust, dbokeh_chart, bokeh_show
-from App.common import loading_bar, V, overview_figure
+from App.common import loading_bar, V, overview_figure, tabs_out
 from App import tab2
 
 #########################################
@@ -18,6 +18,13 @@ el = widgets.Text(value='-', description='selected:', disabled=True, layout=widg
 mo = widgets.SelectMultiple( options=['undefined','OFF','MAN','AUTO'], value=['MAN','AUTO'], rows=4, description='modes: ', disabled=False)
 succ = widgets.SelectMultiple( options=['success','failed','undefined'], value=['success'], rows=3, description='success: ', disabled=False)
 alarm_warning = widgets.SelectMultiple( options=['-','Alarms','Warnings'], value=['-'], rows=3, description='A&W: ', disabled=False)
+
+
+def selected():
+    selected_engine.value = V.selected
+    with tabs_out:
+        tabs_out.clear_output()
+        print('tab3')
 
 @tab3_out.capture(clear_output=True)
 def show_overview(b):
@@ -83,6 +90,13 @@ def show_overview(b):
 ###############
 # tab3 widgets
 ###############
+selected_engine = widgets.Text(
+    value='-', description='selected:', disabled=True, 
+    layout=widgets.Layout(width='603px'))
 t3_button = widgets.Button(description='Overview',disabled=False, button_style='primary')
 t3_button.on_click(show_overview)
-_tab = widgets.VBox([widgets.HBox([tab2.el,t3_button]), widgets.HBox([mo,succ,alarm_warning]),tab3_out])
+_tab = widgets.VBox(
+    [widgets.HBox([selected_engine,t3_button]), 
+     widgets.HBox([mo,succ,alarm_warning]),
+     tab3_out],
+    layout=widgets.Layout(min_height=V.hh))

@@ -7,12 +7,17 @@ from ipywidgets import AppLayout, Button, Text, Select, Tab, Layout, VBox, HBox,
 from IPython.display import display
 from dmyplant2 import cred, MyPlant
 from dmyplant2 import FSMOperator, cplotdef #, Engine
-from App.common import loading_bar, V, myfigures, el, mp
+from App.common import loading_bar, V, myfigures, el, mp, tabs_out
 
 #########################################
 # tab5
 #########################################
 tab5_out = widgets.Output()
+
+def selected():
+    with tabs_out:
+        tabs_out.clear_output()
+        print('tab5')
 
 @tab5_out.capture(clear_output=True)
 def do_refresh(but):
@@ -110,4 +115,9 @@ spacer = HTML(
     description='',
 )
 
-_tab = VBox([HBox([reload_button,save_messages]),spacer,HBox([txt_lookup, txt_lookup_exclude, lookup_button, txt_lookup_chbx]), tab5_out])
+_tab = VBox(
+    [HBox([reload_button,save_messages]),
+     spacer,
+     HBox([txt_lookup, txt_lookup_exclude, lookup_button, txt_lookup_chbx]),
+     tab5_out],
+     layout=widgets.Layout(min_height=V.hh))

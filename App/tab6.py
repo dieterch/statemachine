@@ -8,13 +8,18 @@ from bokeh.models import Span
 from IPython.display import display
 from dmyplant2 import cred, MyPlant, equal_adjust, dbokeh_chart, bokeh_show
 from dmyplant2 import FSMOperator, cplotdef #, Engine
-from App.common import loading_bar, V, myfigures, el
+from App.common import loading_bar, V, myfigures, el, tabs_out
 from App import tab3
 
 #########################################
 # tab6 - playground
 #########################################
 tab6_out = widgets.Output()
+
+def selected():
+    with tabs_out:
+        tabs_out.clear_output()
+        print('tab6')
 
 @tab6_out.capture(clear_output=True)
 def showtecjet(b):
@@ -223,4 +228,7 @@ sync_button = widgets.Button(
 )
 sync_button.on_click(showsync)
 
-_tab = widgets.VBox([widgets.HBox([tj_button,exh_temp_button,sync_button]),tab6_out])
+_tab = widgets.VBox([
+    widgets.HBox([tj_button,exh_temp_button,sync_button]),
+    tab6_out],
+    layout=widgets.Layout(min_height=V.hh))

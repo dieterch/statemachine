@@ -7,7 +7,7 @@ from ipywidgets import AppLayout, Button, Text, Select, Tab, Layout, VBox, HBox,
 from dmyplant2 import cred, MyPlant, Engine, cplotdef
 
 cred()
-mp = MyPlant(3600)
+mp = MyPlant(0)
 
 # DEFINITION OF PLOTS & OVERVIEW
 def myfigures(e = None):
@@ -83,12 +83,15 @@ loading_bar = widgets.Image(
 
 qfn = './engines.pkl'
 
+def init_query_list():
+    return ['Forsa Hartmoor','BMW Landshut']
+
 def get_query_list():
     if os.path.exists(qfn):
         with open(qfn, 'rb') as handle:
             query_list = pickle.load(handle)
     else:  
-        query_list = ['Forsa Hartmoor','BMW Landshut']
+        query_list = init_query_list()
     return query_list
 
 def save_query_list(query_list):
@@ -100,13 +103,15 @@ def save_query_list(query_list):
 
 @dataclass
 class V:
-    hh = '1000px' # window height
+    hh = '500px' # window height
     fleet = None
     e = None
     lfigures = myfigures()
     plotdef, vset = cplotdef(mp, lfigures)
     fsm = None
     rdf = pd.DataFrame([])
+    selected = ''
+    selected_number = ''
     query_list = []
 
 def init_globals():
@@ -122,3 +127,4 @@ el = Text(
     layout=Layout(width='603px'))
 
 init_globals()
+tabs_out = widgets.Output()

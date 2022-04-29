@@ -13,7 +13,7 @@ from dmyplant2 import (
     FSM_add_Warnings, bokeh_show, cvset
 )
 from bokeh.io import push_notebook #, show, output_notebook
-from App.common import loading_bar, V, myfigures, mp
+from App.common import loading_bar, V, myfigures, mp, tabs_out
 from App import tab2
 
 #########################################
@@ -22,6 +22,11 @@ from App import tab2
 tab4_out = widgets.Output()
 pfigsize=(18,10)
 
+def selected():
+    selected_engine.value = V.selected
+    with tabs_out:
+        tabs_out.clear_output()
+        print('tab4')
 
 def calc_time_range(sv):
     tns = pd.to_datetime((sv['starttime'].timestamp() + time_range.value[0]/100.0 * (sv['endtime']-sv['starttime']).seconds), unit='s')
@@ -134,6 +139,9 @@ def start_run2(b):
 ###############
 # tab4 widgets
 ###############
+selected_engine = widgets.Text(
+    value='-', description='selected:', disabled=True, 
+    layout=widgets.Layout(width='603px'))
 
 sno = widgets.IntText(
     description='StartNo: ',
@@ -177,7 +185,7 @@ time_range.observe(start_info,'value')
 _tab = VBox([
             HBox([
                 VBox([
-                    HBox([tab2.el, tshowplots]),
+                    HBox([selected_engine, tshowplots]),
                     HBox([sno_slider, sno])
                 ]),
                 plotselection
@@ -185,4 +193,4 @@ _tab = VBox([
             HBox([time_range, b_run2]),
             start_table,
             tab4_out
-        ]);
+        ],layout=widgets.Layout(min_height=V.hh));

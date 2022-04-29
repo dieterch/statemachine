@@ -6,14 +6,25 @@ from datetime import datetime, date, timedelta
 import ipywidgets as widgets
 from ipywidgets import AppLayout, Button, Text, Select, Tab, Layout, VBox, HBox, Label, HTML, interact, interact_manual, interactive, IntSlider, Output
 from IPython.display import display
-from dmyplant2 import cred, MyPlant, FSMOperator, get_size
+from dmyplant2 import cred, MyPlant, Engine, FSMOperator, get_size
 from App import tab1
-from App.common import loading_bar, V
+from App.common import loading_bar, V, mp, tabs_out
 
 #########################################
 # tab2
 #########################################
 tab2_out = widgets.Output()
+
+def selected():
+    with tabs_out:
+        tabs_out.clear_output()
+        print('tab2', end='')
+        print(' - please wait ...')
+        V.e=Engine.from_fleet(mp, V.fleet.iloc[int(V.selected_number)])
+        selected_engine.value = V.selected
+        tabs_out.clear_output()
+        print('tab2')
+        
 run2_chkbox = widgets.Checkbox(
     value=False,
     description='FSM Run2',
@@ -42,7 +53,7 @@ def fsm_loadmessages(b):
 
 #@tab2_out.capture(clear_output=True)
 def fsm_run(b):
-    motor = V.fleet.iloc[int(tab1.selno.value)]
+    motor = V.fleet.iloc[int(V.selected_number)]
     with tab2_out:
         tab2_out.clear_output()
         if V.fsm is not None:
@@ -75,13 +86,15 @@ def fsm_results(b):
                 print(f"Starting reliability: {V.rdf[V.rdf['success'] == 'success'].shape[0]/(V.rdf.shape[0]-V.rdf[V.rdf['success'] == 'undefined'].shape[0])*100.0:3.1f}% ")
 
             if len(V.fsm.results['run2_failed']) > 0:
-                print()
-                print('unsucessful run2 data collection:')
-                print('---------------------------------')
-                display(pd.DataFrame(V.fsm.results['run2_failed'])[V.fsm.startstopHandler.run2filter_content].style.hide())
+                with tabs_out:
+                    tabs_out.clear_output()
+                    print()
+                    print('unsucessful run2 data:')
+                    print('---------------------------------')
+                    display(pd.DataFrame(V.fsm.results['run2_failed'])[V.fsm.startstopHandler.run2filter_content].style.hide())
 
 def fsm_run0(b):
-    motor = V.fleet.iloc[int(tab1.selno.value)]
+    #motor = V.fleet.iloc[int(V.selected_number)]
     with tab2_out:
         tab2_out.clear_output()
         if V.fsm is not None:
@@ -99,7 +112,7 @@ def fsm_run1(b):
             V.rdf = V.fsm.starts
 
 def fsm_run2(b):
-    motor = V.fleet.iloc[int(tab1.selno.value)]
+    #motor = V.fleet.iloc[int(V.selected_number))]
     with tab2_out:
         #tab2_out.clear_output()
         if V.fsm is not None:
@@ -149,7 +162,7 @@ def fsm_init(b):
 ###############
 # tab2 widgets
 ###############
-el = Text(
+selected_engine = Text(
     value='-', description='selected:', disabled=True, 
     layout=Layout(width='603px'))
 t1 = widgets.DatePicker( 
@@ -213,21 +226,29 @@ b_initfsm = widgets.Button(
     button_style='')
 b_initfsm.on_click(fsm_init)
 
-_tab = HBox([
-            VBox([
-                el,
-                HBox([t1,t2,run2_chkbox]),
-                tab2_out
+_tab = VBox([
+            HBox([
+                VBox([
+                    selected_engine,
+                    HBox([t1,t2,run2_chkbox]),
+                    tab2_out
+                ]),
+                VBox([
+                    b_loadmessages,
+                    b_runfsm,
+                    b_resultsfsm,
+                    b_runfsm0,
+                    b_runfsm1,
+                    b_runfsm2,
+                    b_storefsm,
+                    b_loadfsm, 
+                    b_initfsm
+                ])
             ]),
-            VBox([
-                b_loadmessages,
-                b_runfsm,
-                b_resultsfsm,
-                b_runfsm0,
-                b_runfsm1,
-                b_runfsm2,
-                b_storefsm,
-                b_loadfsm, 
-                b_initfsm
-            ])
-        ])
+        ],layout=widgets.Layout(min_height=V.hh))
+ 
+            
+            
+            
+            
+            
