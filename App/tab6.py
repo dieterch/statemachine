@@ -8,7 +8,7 @@ from bokeh.models import Span
 from IPython.display import display
 from dmyplant2 import cred, MyPlant, equal_adjust, dbokeh_chart, bokeh_show
 from dmyplant2 import FSMOperator, cplotdef #, Engine
-from App.common import loading_bar, V, myfigures, el, tabs_out
+from App.common import loading_bar, V, tabs_out
 from App import tab3
 
 #########################################

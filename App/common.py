@@ -103,7 +103,7 @@ def save_query_list(query_list):
 
 @dataclass
 class V:
-    hh = '500px' # window height
+    hh = '350px' # window height
     fleet = None
     e = None
     lfigures = myfigures()
@@ -122,9 +122,20 @@ def init_globals():
     V.rdf = pd.DataFrame([])
     V.query_list = get_query_list()
 
-el = Text(
-    value='-', description='selected:', disabled=True, 
-    layout=Layout(width='603px'))
+# el = Text(
+#     value='-', description='selected:', disabled=True, 
+#     layout=Layout(width='603px'))
 
 init_globals()
 tabs_out = widgets.Output()
+tabs_html = widgets.HTML(
+    value='<hr>',
+    Layout=widgets.Layout(
+        overflow='scroll',
+        border ='1px solid black',
+        width  ='auto',
+        height ='auto',
+        flex_flow = "column wrap",
+        align_items = "flex-start",
+        display='flex')
+)

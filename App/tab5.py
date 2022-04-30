@@ -7,7 +7,7 @@ from ipywidgets import AppLayout, Button, Text, Select, Tab, Layout, VBox, HBox,
 from IPython.display import display
 from dmyplant2 import cred, MyPlant
 from dmyplant2 import FSMOperator, cplotdef #, Engine
-from App.common import loading_bar, V, myfigures, el, mp, tabs_out
+from App.common import loading_bar, V, mp, tabs_out
 
 #########################################
 # tab5

@@ -8,7 +8,7 @@ from ipywidgets import AppLayout, Button, Text, Select, Tab, Layout, VBox, HBox,
 from IPython.display import display
 from dmyplant2 import cred, MyPlant, Engine, FSMOperator, get_size
 from App import tab1
-from App.common import loading_bar, V, mp, tabs_out
+from App.common import loading_bar, V, mp, tabs_out, tabs_html
 
 #########################################
 # tab2
@@ -17,9 +17,9 @@ tab2_out = widgets.Output()
 
 def selected():
     with tabs_out:
+        tabs_html.value = '<hr>'
         tabs_out.clear_output()
-        print('tab2', end='')
-        print(' - please wait ...')
+        print(f'tab2 - please wait loading Engine Data for "{V.selected}" from Myplant ...')
         V.e=Engine.from_fleet(mp, V.fleet.iloc[int(V.selected_number)])
         selected_engine.value = V.selected
         tabs_out.clear_output()
