@@ -4,10 +4,10 @@ import pickle
 import pandas as pd; pd.options.mode.chained_assignment = None
 import ipywidgets as widgets
 from ipywidgets import AppLayout, Button, Text, Select, Tab, Layout, VBox, HBox, Label, HTML, interact, interact_manual, interactive, IntSlider, Output
-from dmyplant2 import cred, MyPlant, Engine, cplotdef
+from dmyplant2 import cred, MyPlant, Engine, cplotdef, save_json, load_json
 
 cred()
-mp = MyPlant(0)
+mp = MyPlant(300)
 
 # DEFINITION OF PLOTS & OVERVIEW
 def myfigures(e = None):
@@ -82,11 +82,12 @@ loading_bar = widgets.Image(
 )
 
 qfn = './engines.pkl'
+query_list_fn = './query_list.json'
 
 def init_query_list():
     return ['Forsa Hartmoor','BMW Landshut']
 
-def get_query_list():
+def get_query_list_pkl():
     if os.path.exists(qfn):
         with open(qfn, 'rb') as handle:
             query_list = pickle.load(handle)
@@ -94,12 +95,16 @@ def get_query_list():
         query_list = init_query_list()
     return query_list
 
+def get_query_list():
+    if os.path.exists(query_list_fn):
+        query_list=load_json(query_list_fn)
+    else:  
+        query_list = init_query_list()
+    return query_list
+
 def save_query_list(query_list):
-    #print(tdd.value, query_list)
-    if os.path.exists(qfn):
-        os.remove(qfn)
-    with open(qfn, 'wb') as handle:
-        pickle.dump(query_list, handle, protocol=5)    
+    query_list = [q for q in query_list if not q in ['312','316','320','412','416','420','424','612','616','620','624','920']]
+    save_json(query_list_fn,query_list)    
 
 @dataclass
 class V:
@@ -129,7 +134,7 @@ def init_globals():
 init_globals()
 tabs_out = widgets.Output()
 tabs_html = widgets.HTML(
-    value='<hr>',
+    value='',
     Layout=widgets.Layout(
         overflow='scroll',
         border ='1px solid black',

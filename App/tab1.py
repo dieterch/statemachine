@@ -6,7 +6,7 @@ from pprint import pformat as pf
 import ipywidgets as widgets
 from IPython.display import display
 from ipyfilechooser import FileChooser
-from dmyplant2 import cred, MyPlant, FSMOperator
+from dmyplant2 import cred, MyPlant, FSMOperator, save_json, load_json
 from .common import V, init_query_list, get_query_list, save_query_list, tabs_out, tabs_html
 
 cred()
@@ -78,7 +78,7 @@ def search(but):
                     precision=0,
                     na_rep='-'
                     ).to_html(escape=False, index=False)
-        if not query_drop_down.value in V.query_list:
+        if ((not query_drop_down.value in V.query_list) and (len(engine_selections.options) > 0)):
             V.query_list.append(query_drop_down.value)
         save_query_list(V.query_list)
     else:
@@ -93,8 +93,8 @@ def load_testfile(but):
         V.fsm = FSMOperator.load_results(mp, fdialog.selected)
         V.e = V.fsm._e
         V.rdf = V.fsm.starts
-        selected_engine.value = V.fsm.results['info']['Name']
-        selected_engine_number.value = '0'
+        selected_engine.value = V.selected = V.fsm.results['info']['Name']
+        selected_engine_number.value = V.selected_number = '0'
         with tabs_out:
             status('')
             display(pd.DataFrame.from_dict(V.fsm.results['info'], orient='index').T.style.hide())
@@ -105,7 +105,14 @@ def load_testfile(but):
 
 def clear(but):
     tab1_out.clear_output()
-    tabs_html.value = '<hr>'
+    query_drop_down.value = ''
+    engine_selections.options = list()
+    #engine_selections.value = ''
+    selected_engine.value = ''
+    selected_engine_number.value = ''
+    tabs_html.value = ''
+    V.selected = ''
+    V.selected_number = ''
     status()
     #V.query_list = init_query_list()
     #save_query_list(V.query_list)
@@ -151,8 +158,8 @@ query_drop_down = widgets.Combobox(
     layout=widgets.Layout(width='600px'))
 
 engine_selections = widgets.Select(
-    options=['-'], 
-    value='-', 
+    options=list(), 
+    #value='', 
     rows=10, 
     description='Engine:', 
     disabled=False, 
@@ -173,7 +180,14 @@ selected_engine_number = widgets.Text(
 
 b_search = widgets.Button(
     description='Lookup',
-    disabled=False, 
+    disabled=False,
+    tooltip = \
+'''- Site Name
+- Engine Type
+- Engine Version
+- Design Number
+- serialNumber
+- assetNumber''',
     button_style='primary')
 b_search.on_click(search)
 

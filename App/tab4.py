@@ -23,10 +23,17 @@ tab4_out = widgets.Output()
 pfigsize=(18,10)
 
 def selected():
-    selected_engine.value = V.selected
-    with tabs_out:
-        tabs_out.clear_output()
-        print('tab4')
+    if V.fsm is not None: 
+        selected_engine.value = V.selected
+        V.lfigures = myfigures(V.e)
+        V.plotdef, V.vset = cplotdef(mp, V.lfigures)
+        rdf = V.fsm.starts
+        if not rdf.empty:
+            if sno_slider.max != (rdf.shape[0]-1):
+                sno_slider.max = rdf.shape[0]-1
+        with tabs_out:
+            tabs_out.clear_output()
+            print('tab4')
 
 def calc_time_range(sv):
     tns = pd.to_datetime((sv['starttime'].timestamp() + time_range.value[0]/100.0 * (sv['endtime']-sv['starttime']).seconds), unit='s')
@@ -99,7 +106,7 @@ def start_info(*args):
         rdf = V.fsm.starts
         if not rdf.empty:
             sv = rdf.iloc[sno.value]
-            ltitle = f"||| Start No {sv['no']} {sv['starttime'].round('S')} to {sv['endtime'].round('S')}"
+            ltitle = f"» Start No {sv['no']} {sv['starttime'].round('S')} to {sv['endtime'].round('S')} «"
             summary = pd.DataFrame(sv[startstopFSM.run2filter_content]).T
             r = summary.style.set_table_styles([
                 {'selector':'th,tbody','props':'font-size:0.5rem; font-weight: bold; text-align:center; background-color: #D3D3D3; ' + \

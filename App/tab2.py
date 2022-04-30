@@ -13,242 +13,235 @@ from App.common import loading_bar, V, mp, tabs_out, tabs_html
 #########################################
 # tab2
 #########################################
-tab2_out = widgets.Output()
-
-def selected():
-    with tabs_out:
-        tabs_html.value = '<hr>'
-        tabs_out.clear_output()
-        print(f'tab2 - please wait loading Engine Data for "{V.selected}" from Myplant ...')
-        V.e=Engine.from_fleet(mp, V.fleet.iloc[int(V.selected_number)])
-        selected_engine.value = V.selected
-        tabs_out.clear_output()
-        print('tab2')
+class Tab2():
+    def __init__(self):
         
-run2_chkbox = widgets.Checkbox(
-    value=False,
-    description='FSM Run2',
-    disabled=False,
-    indent=True)
+        self.tab2_out = widgets.Output()
+        self.run2_chkbox = widgets.Checkbox(
+                value=False,
+                description='FSM Run2',
+                disabled=False,
+                indent=True)
 
-def fsm_loadmessages(b):
-    with tab2_out:
-        tab2_out.clear_output()
-        print('.. loading messages.')
-        display(loading_bar)
-        try:
-            V.fsm = FSMOperator(V.e, p_from=t1.value, p_to=t2.value)
-            tab2_out.clear_output()
-            b_runfsm.button_style='primary'
-            b_runfsm.disabled = False
-            if not V.fsm.exists:
-                b_loadfsm.disabled = True
-                b_loadfsm.button_style = ''
-            else:
-                b_loadfsm.disabled = False
-                b_loadfsm.button_style = 'primary'
-        except Exception as err:
-            tab2_out.clear_output()
-            print('Error: ',str(err))
+        self.tab2_selected_engine = widgets.Text(
+            value='-', description='selected:', disabled=True, 
+            layout=Layout(width='603px'))
 
-#@tab2_out.capture(clear_output=True)
-def fsm_run(b):
-    motor = V.fleet.iloc[int(V.selected_number)]
-    with tab2_out:
-        tab2_out.clear_output()
-        if V.fsm is not None:
-            print()
-            V.fsm.run0(enforce=True, silent=False, debug=False)
-            print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
-            V.fsm.run1(silent=False, successtime=300, debug=False) # run Finite State Machine
-            print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
-            if run2_chkbox.value:
-                V.fsm.run2(silent = False)
-                print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
-            V.fsm.store()
-            V.rdf = V.fsm.starts
+        self.t1 = widgets.DatePicker( 
+            value=pd.to_datetime('2022-01-01'), 
+            description='From: ',disabled=False)
+        
+        self.t2 = widgets.DatePicker( 
+            value = date.today(), 
+            description='To:',disabled=False)
+
+        self.b_loadmessages = Button(
+            description='load Messages',
+            disabled=True, 
+            button_style='primary')
+        self.b_loadmessages.on_click(self.fsm_loadmessages)
+
+        self.b_runfsm = widgets.Button(
+            description='Run All FSMs',
+            disabled=True, 
+            button_style='primary')
+        self.b_runfsm.on_click(self.fsm_run)
+
+        self.b_resultsfsm = widgets.Button(
+            description='Results',
+            disabled=True, 
+            button_style='success')
+        self.b_resultsfsm.on_click(self.fsm_results)
+
+        self.b_runfsm0 = widgets.Button(
+            description='Run FSM0',
+            disabled=True, 
+            button_style='success')
+        self.b_runfsm0.on_click(self.fsm_run0)
+
+        self.b_runfsm1 = widgets.Button(
+            description='Run FSM1',
+            disabled=True, 
+            button_style='success')
+        self.b_runfsm1.on_click(self.fsm_run1)
+
+        self.b_runfsm2 = widgets.Button(
+            description='Run FSM2',
+            disabled=True, 
+            button_style='success')
+        self.b_runfsm2.on_click(self.fsm_run2)
+
+        self.b_savefsm = widgets.Button(
+            description='Store FSM',
+            disabled=True, 
+            button_style='success')
+        self.b_savefsm.on_click(self.fsm_save) 
+
+    @property
+    def tab(self):
+        return VBox([
+            HBox([
+                VBox([
+                    self.tab2_selected_engine,
+                    HBox([self.t1,self.t2,self.run2_chkbox]),
+                    self.tab2_out
+                ]),
+                VBox([
+                    self.b_loadmessages,
+                    self.b_runfsm,
+                    self.b_resultsfsm,
+                    self.b_runfsm0,
+                    self.b_runfsm1,
+                    self.b_runfsm2,
+                    self.b_savefsm,
+                ])
+            ]),
+        ],layout=widgets.Layout(min_height=V.hh))
+        
+
+    def selected(self):
+        self.check_buttons()
+        with tabs_out:
+            tabs_out.clear_output()
+            print('tab2')
+            tabs_html.value = ''
+            if V.fleet is not None:
+                if not V.fleet.empty:
+                    if V.selected != '':
+                        tabs_out.clear_output()
+                        print(f'tab2 - ⌛ loading Myplant Engine Data for "{V.selected}" ...')
+                        V.e=Engine.from_fleet(mp, V.fleet.iloc[int(V.selected_number)])
+                        self.tab2_selected_engine.value = V.selected
+                        self.t1.value = pd.to_datetime(V.e['Commissioning Date'])
+                        self.check_buttons()
+                        tabs_out.clear_output()
+                        print('tab2')
+                    else:
+                        self.tab2_selected_engine.value = ''
+                        self.t1.value = None
+                        V.fsm = None
+                else:
+                    self.tab2_selected_engine.value = ''
+        with self.tab2_out:        
+            self.tab2_out.clear_output()
+            self.check_buttons()
+                    
+    def fsm_loadmessages(self,b):
+        with self.tab2_out:
+            self.tab2_out.clear_output()
+            print('.. loading messages.')
+            display(loading_bar)
+            try:
+                V.fsm = FSMOperator(V.e, p_from=self.t1.value, p_to=self.t2.value)
+                self.tab2_out.clear_output()
+                self.check_buttons()
+            except Exception as err:
+                self.tab2_out.clear_output()
+                print('Error: ',str(err))
+
+    #@tab2_out.capture(clear_output=True)
+    def fsm_run(self,b):
+        motor = V.fleet.iloc[int(V.selected_number)]
+        with self.tab2_out:
+            self.tab2_out.clear_output()
+            if V.fsm is not None:
+                print()
+                V.fsm.run0(enforce=True, silent=False, debug=False)
+                #print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
+                V.fsm.run1(silent=False, successtime=300, debug=False) # run Finite State Machine
+                #print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
+                if self.run2_chkbox.value:
+                    V.fsm.run2(silent = False)
+                    #print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
+                V.rdf = V.fsm.starts
+                self.check_buttons()
+
+    def print_result(self):
             print()
             print(f"Starts: {V.rdf.shape[0]}") 
-            print(f"Successful: {V.rdf[V.rdf['success'] == 'success'].shape[0]}, Failed: {V.rdf[V.rdf['success'] == 'failed'].shape[0]}, Undefined: {V.rdf[V.rdf['success'] == 'undefined'].shape[0]}")
+            print(f"Runs: {V.fsm.runs_completed}")
+            print(f"Successful: {V.rdf[V.rdf['success'] == 'success'].shape[0]}," + 
+                  f" Failed: {V.rdf[V.rdf['success'] == 'failed'].shape[0]}, Undefined: {V.rdf[V.rdf['success'] == 'undefined'].shape[0]}")
             print(f"Starting reliability raw: {V.rdf[V.rdf['success'] == 'success'].shape[0]/(V.rdf.shape[0])*100.0:3.1f}% ")
             print(f"Starting reliability: {V.rdf[V.rdf['success'] == 'success'].shape[0]/(V.rdf.shape[0]-V.rdf[V.rdf['success'] == 'undefined'].shape[0])*100.0:3.1f}% ")
 
 
-def fsm_results(b):
-    with tab2_out:
-        if V.fsm is not None:
-            V.rdf = V.fsm.starts
-            if len(V.rdf) > 0:
+    def fsm_results(self,b):
+        with self.tab2_out:
+            if V.fsm is not None:
+                V.rdf = V.fsm.starts
+                if len(V.rdf) > 0:
+                    self.print_result()
+                if len(V.fsm.results['run2_failed']) > 0:
+                    with tabs_out:
+                        tabs_out.clear_output()
+                        print()
+                        print('unsucessful run2 data:')
+                        print('---------------------------------')
+                        display(pd.DataFrame(V.fsm.results['run2_failed'])[V.fsm.startstopHandler.run2filter_content].style.hide())
+
+    def fsm_run0(self,b):
+        #motor = V.fleet.iloc[int(V.selected_number)]
+        with self.tab2_out:
+            self.tab2_out.clear_output()
+            if V.fsm is not None:
                 print()
-                print(f"Starts: {V.rdf.shape[0]}") 
-                print(f"Successful: {V.rdf[V.rdf['success'] == 'success'].shape[0]}, Failed: {V.rdf[V.rdf['success'] == 'failed'].shape[0]}, Undefined: {V.rdf[V.rdf['success'] == 'undefined'].shape[0]}")
-                print(f"Starting reliability raw: {V.rdf[V.rdf['success'] == 'success'].shape[0]/(V.rdf.shape[0])*100.0:3.1f}% ")
-                print(f"Starting reliability: {V.rdf[V.rdf['success'] == 'success'].shape[0]/(V.rdf.shape[0]-V.rdf[V.rdf['success'] == 'undefined'].shape[0])*100.0:3.1f}% ")
+                V.fsm.run0(enforce=True, silent=False, debug=False)
+                self.check_buttons()
+                print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
 
-            if len(V.fsm.results['run2_failed']) > 0:
-                with tabs_out:
-                    tabs_out.clear_output()
-                    print()
-                    print('unsucessful run2 data:')
-                    print('---------------------------------')
-                    display(pd.DataFrame(V.fsm.results['run2_failed'])[V.fsm.startstopHandler.run2filter_content].style.hide())
+    def fsm_run1(self,b):
+        with self.tab2_out:
+            #tab2_out.clear_output()
+            if V.fsm is not None:
+                V.fsm.run1(silent=False, successtime=300, debug=False) # run Finite State Machine
+                self.check_buttons()
+                V.rdf = V.fsm.starts
+                print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
 
-def fsm_run0(b):
-    #motor = V.fleet.iloc[int(V.selected_number)]
-    with tab2_out:
-        tab2_out.clear_output()
+                
+    def fsm_run2(self,b):
+        #motor = V.fleet.iloc[int(V.selected_number))]
+        with self.tab2_out:
+            #tab2_out.clear_output()
+            if V.fsm is not None:
+                V.fsm.run2(silent = False, debug=True)
+                self.check_buttons()
+                V.rdf = V.fsm.starts
+                print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
+
+                
+    def fsm_save(self,b):
         if V.fsm is not None:
-            print()
-            V.fsm.run0(enforce=True, silent=False, debug=False)
-            print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
+            filename = './data/'+ V.fsm._e['Validation Engine'] + '.dfsm'
+            with tabs_out:
+                print(filename)
+                V.fsm.save_results(filename)
+        # with self.tab2_out:
+        #     if V.fsm is not None:
+        #         V.fsm.store()
 
-def fsm_run1(b):
-    with tab2_out:
-        #tab2_out.clear_output()
-        if V.fsm is not None:
-            print()
-            V.fsm.run1(silent=False, successtime=300, debug=False) # run Finite State Machine
-            print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
-            V.rdf = V.fsm.starts
-
-def fsm_run2(b):
-    #motor = V.fleet.iloc[int(V.selected_number))]
-    with tab2_out:
-        #tab2_out.clear_output()
-        if V.fsm is not None:
-            print()
-            V.fsm.run2(silent = False, debug=True)
-            print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
-            V.rdf = V.fsm.starts
-
-def fsm_store(b):
-    with tab2_out:
-        if V.fsm is not None:
-            V.fsm.store()
-
-def fsm_load(b):
-    with tab2_out:
-        tab2_out.clear_output()
-        print('Please Wait, loading FSM Results')
-        display(loading_bar)
-        V.fsm.restore()
-        tab2_out.clear_output()
-        V.rdf = V.fsm.starts
-        print()
-        if 'save_date' in V.fsm.results:
-            print(f"{'Results Date:':>25} {V.fsm.results['save_date'].strftime('%d.%m.%Y')}")
-        print(f"{'Time Range:':>25} {V.fsm.results['first_message'].strftime('%d.%m.%Y')} - {V.fsm.results['last_message'].strftime('%d.%m.%Y')}")
-        print(f"{'Starts:':>25} {V.rdf.shape[0]}") 
-        print(f"{'Successful:':>25} {V.rdf[V.rdf['success'] == 'success'].shape[0]}")
-        print(f"{'Failed:':>25} {V.rdf[V.rdf['success'] == 'failed'].shape[0]}")
-        print(f"{'Undefined:':>25} {V.rdf[V.rdf['success'] == 'undefined'].shape[0]}")
-        print(f"{'Starting reliability raw:':>25} {V.rdf[V.rdf['success'] == 'success'].shape[0]/(V.rdf.shape[0])*100.0:3.1f}% ")
-        print(f"{'Starting reliability:':>25} {V.rdf[V.rdf['success'] == 'success'].shape[0]/(V.rdf.shape[0]-V.rdf[V.rdf['success'] == 'undefined'].shape[0])*100.0:3.1f}% ")
-
-def fsm_init(b):
-    try:
-        V.fsm = FSMOperator(V.e, p_from=pd.to_datetime(date.today - timedelta(days=2)), p_to=pd.to_datetime(date.today))
-        if not V.fsm.exists:
-            b_loadfsm.disabled = True
-            b_loadfsm.button_style = ''
+    def check_buttons(self):
+        for b in [ self.b_loadmessages, self.b_runfsm, self.b_resultsfsm, self.b_runfsm0, self.b_runfsm1, self.b_runfsm2, self.b_savefsm]:
+            b.disabled=True
+        if ((V.e is not None) and (self.t1.value is not None) and (self.t2.value is not None)):
+            self.b_loadmessages.disabled=False
+        if ((V.fsm is not None) and hasattr(V.fsm, '_messages')):
+            self.b_runfsm.disabled = False
+            self.b_runfsm0.disabled = False
         else:
-            b_loadfsm.disabled = False
-            b_loadfsm.button_style = 'primary'
-    except Exception as err:
-        tab2_out.clear_output()
-        print('Error: ',str(err))
-    
+            self.b_runfsm.disabled = True
+        if ((V.fsm is not None) and all(e in V.fsm.runs_completed for e in [0])):
+            self.b_runfsm0.disabled = True
+            self.b_runfsm1.disabled = False
+        if ((V.fsm is not None) and all(e in V.fsm.runs_completed for e in [0,1])):
+            self.b_runfsm1.disabled = True
+            self.b_runfsm2.disabled = False            
+            self.b_resultsfsm.disabled = False            
+            self.b_savefsm.disabled = False
+        if ((V.fsm is not None) and all(e in V.fsm.runs_completed for e in [0,1,2])):
+            self.b_runfsm2.disabled = True            
 
-###############
-# tab2 widgets
-###############
-selected_engine = Text(
-    value='-', description='selected:', disabled=True, 
-    layout=Layout(width='603px'))
-t1 = widgets.DatePicker( 
-    value=pd.to_datetime('2022-01-01'), 
-    description='From: ',disabled=False)
-t2 = widgets.DatePicker( 
-    value = date.today(), 
-    description='To:',disabled=False)
-
-b_loadmessages = Button(
-    description='load Messages',
-    disabled=False, 
-    button_style='primary')
-b_loadmessages.on_click(fsm_loadmessages)
-
-b_runfsm = widgets.Button(
-    description='Run FSM',
-    disabled=True, 
-    button_style='')
-b_runfsm.on_click(fsm_run)
-
-b_resultsfsm = widgets.Button(
-    description='Results',
-    disabled=False, 
-    button_style='success')
-b_resultsfsm.on_click(fsm_results)
-
-b_runfsm0 = widgets.Button(
-    description='Run FSM0',
-    disabled=False, 
-    button_style='success')
-b_runfsm0.on_click(fsm_run0)
-
-b_runfsm1 = widgets.Button(
-    description='Run FSM1',
-    disabled=False, 
-    button_style='success')
-b_runfsm1.on_click(fsm_run1)
-
-b_runfsm2 = widgets.Button(
-    description='Run FSM2',
-    disabled=False, 
-    button_style='success')
-b_runfsm2.on_click(fsm_run2)
-
-b_storefsm = widgets.Button(
-    description='Store FSM',
-    disabled=False, 
-    button_style='success')
-b_storefsm.on_click(fsm_store)
-
-b_loadfsm = widgets.Button(
-    description='Load FSM',
-    disabled=True, 
-    button_style='')
-b_loadfsm.on_click(fsm_load)
-
-b_initfsm = widgets.Button(
-    description='Init FSM',
-    disabled=False, 
-    button_style='')
-b_initfsm.on_click(fsm_init)
-
-_tab = VBox([
-            HBox([
-                VBox([
-                    selected_engine,
-                    HBox([t1,t2,run2_chkbox]),
-                    tab2_out
-                ]),
-                VBox([
-                    b_loadmessages,
-                    b_runfsm,
-                    b_resultsfsm,
-                    b_runfsm0,
-                    b_runfsm1,
-                    b_runfsm2,
-                    b_storefsm,
-                    b_loadfsm, 
-                    b_initfsm
-                ])
-            ]),
-        ],layout=widgets.Layout(min_height=V.hh))
- 
-            
-            
             
             
             
