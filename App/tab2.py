@@ -13,9 +13,10 @@ from App.common import loading_bar, V, mp, tabs_out, tabs_html
 #########################################
 # tab2
 #########################################
-class Tab2():
+class Tab():
     def __init__(self):
-        
+
+        self.title = '2. messages & FSM'
         self.tab2_out = widgets.Output()
         self.run2_chkbox = widgets.Checkbox(
                 value=False,
@@ -35,8 +36,9 @@ class Tab2():
             value = date.today(), 
             description='To:',disabled=False)
 
+        self.load_message_text = 'load Messages'
         self.b_loadmessages = Button(
-            description='load Messages',
+            description=self.load_message_text,
             disabled=True, 
             button_style='primary')
         self.b_loadmessages.on_click(self.fsm_loadmessages)
@@ -72,7 +74,7 @@ class Tab2():
         self.b_runfsm2.on_click(self.fsm_run2)
 
         self.b_savefsm = widgets.Button(
-            description='Store FSM',
+            description='Save FSM',
             disabled=True, 
             button_style='success')
         self.b_savefsm.on_click(self.fsm_save) 
@@ -108,6 +110,7 @@ class Tab2():
             if V.fleet is not None:
                 if not V.fleet.empty:
                     if V.selected != '':
+                        self.b_loadmessages.description = self.load_message_text
                         tabs_out.clear_output()
                         print(f'tab2 - ⌛ loading Myplant Engine Data for "{V.selected}" ...')
                         V.e=Engine.from_fleet(mp, V.fleet.iloc[int(V.selected_number)])
@@ -122,6 +125,11 @@ class Tab2():
                         V.fsm = None
                 else:
                     self.tab2_selected_engine.value = ''
+            else: # engine was loaded from file
+                self.tab2_selected_engine.value = V.selected
+                self.b_loadmessages.description = 'append new messages'
+                self.check_buttons()
+                
         with self.tab2_out:        
             self.tab2_out.clear_output()
             self.check_buttons()

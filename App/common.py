@@ -109,6 +109,7 @@ def save_query_list(query_list):
 @dataclass
 class V:
     hh = '350px' # window height
+    dfigsize = (18,10)
     fleet = None
     e = None
     lfigures = myfigures()
@@ -117,6 +118,9 @@ class V:
     rdf = pd.DataFrame([])
     selected = ''
     selected_number = ''
+    modes_value = []
+    succ_value = []
+    alarm_warning_value = []
     query_list = []
 
 def init_globals():
