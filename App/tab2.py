@@ -1,6 +1,7 @@
 import os
 import sys
 import pickle
+from turtle import width
 import pandas as pd; pd.options.mode.chained_assignment = None
 from datetime import datetime, date, timedelta
 import ipywidgets as widgets
@@ -22,7 +23,16 @@ class Tab():
                 value=False,
                 description='FSM Run2',
                 disabled=False,
-                indent=True)
+                indent=False,
+                layout=widgets.Layout(width='100px'))
+
+        self.single_runs_chkbox = widgets.Checkbox(
+                value=False,
+                description='single Runs',
+                disabled=False,
+                indent=False,
+                layout=widgets.Layout(width='100px'))
+        self.single_runs_chkbox.observe(self.do_single_runs, 'value')
 
         self.tab2_selected_engine = widgets.Text(
             value='-', description='selected:', disabled=True, 
@@ -52,31 +62,34 @@ class Tab():
         self.b_resultsfsm = widgets.Button(
             description='Results',
             disabled=True, 
-            button_style='success')
+            button_style='info')
         self.b_resultsfsm.on_click(self.fsm_results)
 
         self.b_runfsm0 = widgets.Button(
             description='Run FSM0',
             disabled=True, 
-            button_style='success')
+            button_style='',
+            layout=widgets.Layout(display='none'))
         self.b_runfsm0.on_click(self.fsm_run0)
 
         self.b_runfsm1 = widgets.Button(
             description='Run FSM1',
             disabled=True, 
-            button_style='success')
+            button_style='',
+            layout=widgets.Layout(display='none'))
         self.b_runfsm1.on_click(self.fsm_run1)
 
         self.b_runfsm2 = widgets.Button(
             description='Run FSM2',
             disabled=True, 
-            button_style='success')
+            button_style='',
+            layout=widgets.Layout(display='none'))
         self.b_runfsm2.on_click(self.fsm_run2)
 
         self.b_savefsm = widgets.Button(
             description='Save FSM',
             disabled=True, 
-            button_style='success')
+            button_style='primary')
         self.b_savefsm.on_click(self.fsm_save) 
 
     @property
@@ -85,8 +98,12 @@ class Tab():
             HBox([
                 VBox([
                     self.tab2_selected_engine,
-                    HBox([self.t1,self.t2,self.run2_chkbox]),
+                    HBox([self.t1,self.t2]),
                     self.tab2_out
+                ]),
+                VBox([
+                    self.run2_chkbox,
+                    self.single_runs_chkbox
                 ]),
                 VBox([
                     self.b_loadmessages,
@@ -97,7 +114,7 @@ class Tab():
                     self.b_runfsm2,
                     self.b_savefsm,
                 ])
-            ]),
+            ])
         ],layout=widgets.Layout(min_height=V.hh))
         
 
@@ -146,6 +163,16 @@ class Tab():
             except Exception as err:
                 tabs_out.clear_output()
                 print('Error: ',str(err))
+
+    def do_single_runs(self, *args):
+        if self.single_runs_chkbox.value:
+            self.b_runfsm0.layout.display = 'block'
+            self.b_runfsm1.layout.display = 'block'
+            self.b_runfsm2.layout.display = 'block'
+        else:
+            self.b_runfsm0.layout.display = 'none'
+            self.b_runfsm1.layout.display = 'none'
+            self.b_runfsm2.layout.display = 'none'
 
     #@tab2_out.capture(clear_output=True)
     def fsm_run(self,b):
