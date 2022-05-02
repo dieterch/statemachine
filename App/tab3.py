@@ -47,7 +47,7 @@ class Tab():
             options=['-','Alarms','Warnings'], 
             value=['-'], 
             rows=3, 
-            description='A&W: ', 
+            #description='A&W: ', 
             disabled=False
         )
         self.alarm_warning.observe(self.alarm_warning_observe, 'value')

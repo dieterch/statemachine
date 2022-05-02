@@ -1,13 +1,17 @@
 from dataclasses import dataclass
-import os
+import os, sys
 import pickle
 import pandas as pd; pd.options.mode.chained_assignment = None
 import ipywidgets as widgets
 from ipywidgets import AppLayout, Button, Text, Select, Tab, Layout, VBox, HBox, Label, HTML, interact, interact_manual, interactive, IntSlider, Output
 from dmyplant2 import cred, MyPlant, Engine, cplotdef, save_json, load_json
 
-cred()
-mp = MyPlant(300)
+try:
+    cred()
+    mp = MyPlant(300)
+except Exception as err:
+    print(str(err))
+    sys.exit(1)
 
 # DEFINITION OF PLOTS & OVERVIEW
 def myfigures(e = None):
@@ -20,6 +24,8 @@ def myfigures(e = None):
         {'col':['Various_Values_SpeedAct'],'ylim': [0, 2500], 'color':'blue', 'unit':'rpm'},
         {'col':['Ignition_ITPAvg'],'ylim': [-10, 30], 'color':'rgba(255,0,255,0.4)', 'unit':'°KW'},
         {'col':['TecJet_Lambda1'],'ylim': [0, 3], 'color':'rgba(255,165,0,0.4)', 'unit':'-'},
+        {'col':['Various_Values_PressBoost'],'_ylim': [0, 3], 'color':'dodgerblue', 'unit':'bar'},
+        {'col':['Various_Values_TempMixture'],'_ylim': [0, 3], 'color':'orange', 'unit':'°C'},
         {'col':['Various_Values_PosThrottle','Various_Values_PosTurboBypass'],'ylim': [-10, 110], 'color':['rgba(105,105,105,0.6)','rgba(165,42,42,0.4)'], 'unit':'%'},
         ],
         'tecjet' : [
@@ -45,8 +51,14 @@ def myfigures(e = None):
         {'col':['Various_Values_SpeedAct'],'ylim': [0, 2500], 'color':'blue', 'unit':'rpm'},
         {'col':['TecJet_Lambda1'],'ylim': [0, 3], 'color':'rgba(255,165,0,0.4)', 'unit':'-'},
         {'col':func('Exhaust_TempCyl*'),'ylim': [400, 700], 'unit':'°C'},
+        ],
+        'valvenoise' : [
+        {'col':['Power_SetPower','Power_PowerAct'], 'ylim':(0,5000), 'color':['lightblue','red'], 'unit':'kW'},
+        {'col':['Various_Values_SpeedAct'],'ylim': [0, 2500], 'color':'blue', 'unit':'rpm'},
+        {'col':['TecJet_Lambda1'],'ylim': [0, 3], 'color':'rgba(255,165,0,0.4)', 'unit':'-'},
         {'col':func('Knock_Valve_Noise_Cyl*'),'ylim': [0, 12000], 'unit':'mV'},
         ],
+
         'ignition' : [
         {'col':['Power_SetPower','Power_PowerAct'], 'ylim':(0,5000), 'color':['lightblue','red'], 'unit':'kW'},
         {'col':['Various_Values_SpeedAct'],'ylim': [0, 2500], 'color':'blue', 'unit':'rpm'},
@@ -105,7 +117,7 @@ def get_query_list():
 def save_query_list(query_list):
     query_list = [q for q in query_list if not q in ['312','316','320','412','416','420','424','612','616','620','624','920']]
     save_json(query_list_fn,query_list)    
-
+    
 @dataclass
 class V:
     hh = '350px' # window height
@@ -118,9 +130,9 @@ class V:
     rdf = pd.DataFrame([])
     selected = ''
     selected_number = ''
-    modes_value = []
-    succ_value = []
-    alarm_warning_value = []
+    modes_value = ['MAN','AUTO']
+    succ_value = ['success']
+    alarm_warning_value = ['-']
     query_list = []
 
 def init_globals():
@@ -148,3 +160,8 @@ tabs_html = widgets.HTML(
         align_items = "flex-start",
         display='flex')
 )
+
+def status(tbname ,text=''):
+    with tabs_out:
+        tabs_out.clear_output()
+        print(f'{tbname}{" - " if text != "" else ""}{text}')

@@ -7,7 +7,7 @@ import ipywidgets as widgets
 from IPython.display import display
 from ipyfilechooser import FileChooser
 from dmyplant2 import cred, MyPlant, FSMOperator, save_json, load_json
-from .common import V, init_query_list, get_query_list, save_query_list,mp, tabs_out, tabs_html
+from .common import V, init_query_list, get_query_list, save_query_list,mp, tabs_out, tabs_html, status
 
 #cred()
 #mp = MyPlant(3600)
@@ -102,7 +102,7 @@ class Tab():
                 self.child2
             ]
         )
-        self.accordion.set_title(0,'Select FSM Result File')
+        self.accordion.set_title(0,'Work on stored FSM Results')
         self.accordion.set_title(1,'Start Analysis from Installed Fleet')
         self.accordion.observe(self.accordion_change_index, 'selected_index')
         self.accordion.selected_index = 1
@@ -116,23 +116,7 @@ class Tab():
 
 
     def selected(self):
-        with tabs_out:
-            tabs_out.clear_output()
-            print('tab1')
-            #init_globals()
-            #tab1.sel.value = '-'
-            #tab1.selno.value = '-'
-            #tab1.tdd.value = ''
-            #tab1.tdd.options = V.query_list
-            #tab1.es.options = ['-']
-
-            #tab2.tab2_out.clear_output()
-            #tab3.tab3_out.clear_output()
-            #tab4.tab4_out.clear_output()
-            #tab2.b_runfsm.button_style=''
-            #tab2.b_runfsm.disabled = True
-            #tab2.b_loadfsm.disabled = True
-            #tab2.b_loadfsm.button_style = ''
+        status('tab1')
             
     def do_lookup(self,lookup):
         def sfun(x):
@@ -158,9 +142,7 @@ class Tab():
         self.selected_engine_number.value = str(list(self.engine_selections.options).index(self.engine_selections.value))
         V.selected = self.selected_engine.value
         V.selected_number = self.selected_engine_number.value
-        with tabs_out:
-            tabs_out.clear_output()
-            print(f'tab1 - {len(list(self.engine_selections.options))} Engines found - please select an Engine and  move to section 2.')
+        status('tab1',f'{len(list(self.engine_selections.options))} Engines found - please select an Engine and  move to section 2.')
 
     #@self.tab1_out.capture(clear_output=True)
     def search(self,but):
@@ -181,28 +163,24 @@ class Tab():
             if ((not self.query_drop_down.value in V.query_list) and (len(self.engine_selections.options) > 0)):
                 V.query_list.append(self.query_drop_down.value)
             save_query_list(V.query_list)
-        else:
-            with tabs_out:
-                tabs_out.clear_output()     
-                print('tab1 - please provide a query string.')
+        else: 
+            status('tab1','please provide a query string.')
 
     #@tab1_out.capture(clear_output=True)
     def load_testfile(self,but):
         self.tab1_out.clear_output()
         if self.fdialog.selected.endswith('.dfsm'):
-            self.status(f'tab1 -  ⌛ loading {self.fdialog.selected}')
+            status('tab1', f'⌛ loading {self.fdialog.selected}')
             V.fsm = FSMOperator.load_results(mp, self.fdialog.selected)
             V.e = V.fsm._e
             V.rdf = V.fsm.starts
             self.selected_engine.value = V.selected = V.fsm.results['info']['Name']
             self.selected_engine_number.value = V.selected_number = '0'
             with tabs_out:
-                self.status('')
+                status('tab1')
                 display(pd.DataFrame.from_dict(V.fsm.results['info'], orient='index').T.style.hide())
         else:
-            with tabs_out:
-                tabs_out.clear_output()
-                print('tab1 - please select a *.dfsm File.')
+            status('tab1','please select a *.dfsm File.')
 
     def clear(self,but):
         self.tab1_out.clear_output()
@@ -214,17 +192,17 @@ class Tab():
         tabs_html.value = ''
         V.selected = ''
         V.selected_number = ''
-        self.status()
+        status('tab1')
         #V.query_list = init_query_list()
         #save_query_list(V.query_list)
 
-    def status(self,text=''):
-        with tabs_out:
-            tabs_out.clear_output()
-            print(f'tab1{" - " if text != "" else ""}{text}')
+#    def status(self,text=''):
+#        with tabs_out:
+#            tabs_out.clear_output()
+#            print(f'tab1{" - " if text != "" else ""}{text}')
 
     def accordion_change_index(self,*args):
         if self.accordion.selected_index == 0:
-            self.status('please select a *.dfsm File.')
+            status('tab1','please select a *.dfsm File.')
         elif self.accordion.selected_index == 1:
-            self.status('please provide a query string.')
+            status('tab1','please provide a query string.')

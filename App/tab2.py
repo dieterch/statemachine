@@ -135,16 +135,16 @@ class Tab():
             self.check_buttons()
                     
     def fsm_loadmessages(self,b):
-        with self.tab2_out:
-            self.tab2_out.clear_output()
-            print('.. loading messages.')
-            display(loading_bar)
+        with tabs_out:
+            tabs_out.clear_output()
+            print('tab2 - ⌛ loading messages.')
+            #display(loading_bar)
             try:
                 V.fsm = FSMOperator(V.e, p_from=self.t1.value, p_to=self.t2.value)
-                self.tab2_out.clear_output()
+                tabs_out.clear_output()
                 self.check_buttons()
             except Exception as err:
-                self.tab2_out.clear_output()
+                tabs_out.clear_output()
                 print('Error: ',str(err))
 
     #@tab2_out.capture(clear_output=True)

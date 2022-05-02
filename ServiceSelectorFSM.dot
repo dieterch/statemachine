@@ -1,0 +1,12 @@
+digraph G {
+    graph [rankdir=TB labelfontcolor=red fontname="monospace" nodesep=1 size="20,33"]
+    node [fontname="monospace" fontsize=10  shape="circle"]
+    edge [fontname="monospace" color="grey" fontsize=10]
+    undefined [label="undefined"]
+    undefined -> ON [label="1259 Demand oil pump on"]
+    undefined -> OFF [label="1260 Demand oil pump off"]
+    ON [label="ON"]
+    ON -> OFF [label="1260 Demand oil pump off"]
+    OFF [label="OFF"]
+    OFF -> ON [label="1259 Demand oil pump on"]
+}

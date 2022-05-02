@@ -56,7 +56,7 @@ class Tab():
         self.plotselection = widgets.SelectMultiple( 
             options=list(myfigures().keys()), 
             value=list(myfigures().keys())[:], 
-            rows=min(len(myfigures()),5), 
+            rows=min(len(myfigures()),3), 
             disabled=False,
             #description=''
             layout=widgets.Layout(width='100px')
@@ -86,7 +86,7 @@ class Tab():
                         VBox([
                             HBox([self.selected_engine, self.b_plots]),
                             HBox([self.sno_slider, self.sno]),
-                            HBox([self.time_range, self.b_run2]),
+                            #HBox([self.time_range, self.b_run2]),
                         ]),
                         self.plotselection
                     ]),
@@ -119,7 +119,7 @@ class Tab():
             if not VSC:
                 with tabs_out:
                     tabs_out.clear_output()
-            print(f'tab4 - ⌛ loading data ...')
+                    print(f'tab4 - ⌛ loading data ...')
 
         startversuch = rdfs.iloc[0]
         print(f'Please Wait, loading data for Start No. {startversuch.no}')
@@ -180,7 +180,7 @@ class Tab():
             rdf = V.fsm.starts
             if not rdf.empty:
                 sv = rdf.iloc[self.sno.value]
-                ltitle = f"» Start No {sv['no']} {sv['starttime'].round('S')} to {sv['endtime'].round('S')} «"
+                ltitle = f" Start No {sv['no']} from: {sv['starttime'].round('S')} to: {sv['endtime'].round('S')}"
                 summary = pd.DataFrame(sv[startstopFSM.run2filter_content]).T
                 r = summary.style.set_table_styles([
                     {'selector':'th,tbody','props':'font-size:0.5rem; font-weight: bold; text-align:center; background-color: #D3D3D3; ' + \
