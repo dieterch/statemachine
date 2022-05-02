@@ -98,7 +98,10 @@ class Tab():
                             #{'col':['TJ_GasTemp1_at_Min'],'ylim': [0, 100], 'color':'red', 'unit':'°C'},
                             {'col':['no'],'_ylim':(0,1000), 'color':['rgba(0,0,0,0.05)'] },
                             ]
-                    dr2set2 = equal_adjust(dr2set2, rde, do_not_adjust=['no'], minfactor=1.0, maxfactor=1.1)
+                    try:
+                        dr2set2 = equal_adjust(dr2set2, rde, do_not_adjust=['no'], minfactor=1.0, maxfactor=1.1)
+                    except Exception as err:
+                        print(f'Error: {str(err)}')
                     ntitle = ftitle + ' | BMEP at Start vs TJ Gas Temperature in °C '
                     fig3 = dbokeh_chart(rde, dr2set2, x='TJ_GasTemp1_at_Min', style='circle', figsize=self.dfigsize ,title=ntitle);
                     fig3.add_layout(Span(location=24.5,
@@ -117,7 +120,11 @@ class Tab():
                             {'col':['TJ_GasTemp1_at_Min'],'ylim': [0, 100], 'color':'dodgerblue', 'unit':'°C'},
                             {'col':['no'],'_ylim':(0,1000), 'color':['rgba(0,0,0,0.05)'] },
                             ]
-                    dr2set2 = equal_adjust(dr2set2, rde, do_not_adjust=['no'], minfactor=1.0, maxfactor=1.1)
+                    try:
+                        dr2set2 = equal_adjust(dr2set2, rde, do_not_adjust=['no'], minfactor=1.0, maxfactor=1.1)
+                    except Exception as err:
+                        print(f'Error: {str(err)}')
+                        
                     ntitle = ftitle + ' | BMEP at Start vs TJ TJ_GasDiffPressMin in mbar '
                     fig3 = dbokeh_chart(rde, dr2set2, x='TJ_GasDiffPressMin', style='circle', figsize=self.dfigsize ,title=ntitle);
                     fig3.add_layout(Span(location=24.5,
@@ -129,8 +136,8 @@ class Tab():
                     
                 print()
                 display(rde[V.fsm.results['run2_content']].describe().style.format(precision=2, na_rep='-'))                
-                    
-                display(rde[V.fsm.results['run2_content']].style.format(precision=2,na_rep='-').hide())
+                print()
+                display(rde[V.fsm.results['run2_content']][::-1].style.format(precision=2,na_rep='-').hide())
             else:
                 print('No Data available.')
     

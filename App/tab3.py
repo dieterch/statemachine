@@ -30,27 +30,32 @@ class Tab():
             value=['MAN','AUTO'], 
             rows=4, 
             description='modes: ', 
-            disabled=False
-        )
+            disabled=False,
+            layout=widgets.Layout(width='200px'))
         self.mo.observe(self.mo_observe, 'value')
 
         self.succ = widgets.SelectMultiple( 
             options=['success','failed','undefined'], 
             value=['success'], 
-            rows=3, 
+            rows=4, 
             description='success: ', 
-            disabled=False
-        )
+            disabled=False,
+            layout=widgets.Layout(width='200px'))        
         self.succ.observe(self.succ_observe, 'value')
 
         self.alarm_warning = widgets.SelectMultiple( 
             options=['-','Alarms','Warnings'], 
             value=['-'], 
             rows=3, 
-            #description='A&W: ', 
-            disabled=False
-        )
+            description='A/W', 
+            disabled=False,
+            layout=widgets.Layout(width='200px'))
         self.alarm_warning.observe(self.alarm_warning_observe, 'value')
+        
+        self.msg_no = widgets.Text(
+            value='',
+            description='msg no:',
+            layout=widgets.Layout(max_width='200px'))
 
         self.selected_engine = widgets.Text(
             value='-', 
@@ -70,7 +75,7 @@ class Tab():
     def tab(self):
         return widgets.VBox(
             [widgets.HBox([self.selected_engine,self.t3_button]), 
-            widgets.HBox([self.mo,self.succ,self.alarm_warning]),
+            widgets.HBox([self.mo,self.succ,widgets.VBox([self.alarm_warning,self.msg_no])]),
             self.tab3_out],
             layout=widgets.Layout(min_height=V.hh))
 
@@ -135,7 +140,7 @@ class Tab():
 
                 print()
                 #display(rde[startstopFSM.run2filter_content]
-                display(self.rde[V.fsm.results['run2_content']]
+                display(self.rde[V.fsm.results['run2_content']][::-1]
                         .style
                         .hide()
                         .format(
