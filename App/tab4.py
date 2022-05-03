@@ -41,7 +41,7 @@ class Tab():
         self.sno.observe(self.start_info, 'value')
 
         self.b_plots = widgets.Button(
-            description='Plots',
+            description='Plot',
             disabled=False, 
             button_style='primary')
         self.b_plots.on_click(self.show_plots)
@@ -165,8 +165,6 @@ class Tab():
             print('Error: ', str(err))
             if debug:
                 print(traceback.format_exc())
-        else:
-            print(f"Error: Start No {x} is not in results.")
 
     #@tab4_out.capture(clear_output=True)
     def show_plots(self, but):

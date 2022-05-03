@@ -62,7 +62,7 @@ class Tab():
         self.b_resultsfsm = widgets.Button(
             description='Results',
             disabled=True, 
-            button_style='')
+            button_style='primary')
         self.b_resultsfsm.on_click(self.fsm_results)
 
         self.b_runfsm0 = widgets.Button(
