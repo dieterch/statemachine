@@ -26,6 +26,13 @@ class Tab():
                 indent=False,
                 layout=widgets.Layout(width='100px'))
 
+        self.run2_refresh_chkbox = widgets.Checkbox(
+                value=False,
+                description='R2 Refresh',
+                disabled=False,
+                indent=False,
+                layout=widgets.Layout(width='100px'))
+
         self.single_runs_chkbox = widgets.Checkbox(
                 value=False,
                 description='single Runs',
@@ -103,6 +110,7 @@ class Tab():
                 ]),
                 VBox([
                     self.run2_chkbox,
+                    self.run2_refresh_chkbox,
                     self.single_runs_chkbox
                 ]),
                 VBox([
@@ -186,7 +194,7 @@ class Tab():
                 V.fsm.run1(silent=False, successtime=300, debug=False) # run Finite State Machine
                 #print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
                 if self.run2_chkbox.value:
-                    V.fsm.run2(silent = False)
+                    V.fsm.run2(silent = False, p_refresh=self.run2_refresh_chkbox.value)
                     #print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
                 V.rdf = V.fsm.starts
                 self.check_buttons()
@@ -240,7 +248,7 @@ class Tab():
         with self.tab2_out:
             #tab2_out.clear_output()
             if V.fsm is not None:
-                V.fsm.run2(silent = False, debug=True)
+                V.fsm.run2(silent = False, debug=True, p_refresh=self.run2_refresh_chkbox.value)
                 self.check_buttons()
                 V.rdf = V.fsm.starts
                 print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")

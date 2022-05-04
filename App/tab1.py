@@ -154,7 +154,7 @@ class Tab():
                 tabs_html.value = V.fleet[:].T \
                     .style \
                     .set_table_styles([
-                            {'selector':'th,td','props':'font-size:0.6rem; min-width: 70px; margin: 0px; padding: 0px;'}]
+                            {'selector':'th,td','props':'font-size:0.7rem; min-width: 70px; margin: 0px; padding: 0px;'}]
                         ) \
                     .format(
                         precision=0,

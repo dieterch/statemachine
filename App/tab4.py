@@ -6,14 +6,14 @@ import traceback
 from datetime import datetime, date
 import ipywidgets as widgets
 from ipywidgets import AppLayout, Button, Text, Select, Tab, Layout, VBox, HBox, Label, HTML, interact, interact_manual, interactive, IntSlider, Output
-from IPython.display import display
+from IPython.display import display, HTML
 from dmyplant2 import (
     cred, MyPlant, FSMOperator, startstopFSM, cplotdef, load_data, get_cycle_data2, get_cycle_data3, count_columns, 
     FSM_splot, FSM_add_Notations, disp_alarms, disp_warnings, FSM_add_Alarms,
     FSM_add_Warnings, bokeh_show, cvset
 )
 from bokeh.io import push_notebook #, show, output_notebook
-from App.common import loading_bar, V, myfigures, mp, tabs_out
+from App.common import loading_bar, V, myfigures, mp, tabs_out, status
 #from App import tab2
 
 #########################################
@@ -27,16 +27,16 @@ class Tab():
         self.pfigsize=V.dfigsize
 
         self.selected_engine = widgets.Text(
-            value='-', description='selected:', disabled=True, 
-            layout=widgets.Layout(width='603px'))
+            value='-', description='Selected:', disabled=True, 
+            layout=widgets.Layout(width='608px'))
 
         self.sno = widgets.IntText(
             #description='StartNo: ',
-            layout=widgets.Layout(max_width='150px'))
+            layout=widgets.Layout(max_width='120px'))
 
         self.sno_slider = widgets.IntSlider(0, 0, 5 , 1,
             description = 'StartNo:',
-            layout=widgets.Layout(width='603px'))
+            layout=widgets.Layout(width='483px'))
         mylink = widgets.jslink((self.sno, 'value'), (self.sno_slider, 'value'))
         self.sno.observe(self.start_info, 'value')
 
@@ -46,22 +46,59 @@ class Tab():
             button_style='primary')
         self.b_plots.on_click(self.show_plots)
 
-        self.b_run2 = widgets.Button(
-            description='FSM 2',
-            disabled=False, 
-            tooltip='Run FSM2 Results just for the selected Start', 
-            button_style='primary')
-        self.b_run2.on_click(self.start_run2)
+        # self.b_run2 = widgets.Button(
+        #     description='FSM 2',
+        #     disabled=False, 
+        #     tooltip='Run FSM2 Results just for the selected Start', 
+        #     button_style='primary')
+        # self.b_run2.on_click(self.start_run2)
 
-        self.plotselection = widgets.SelectMultiple( 
+        self.plot_selection = widgets.SelectMultiple( 
             options=list(myfigures().keys()), 
             value=list(myfigures().keys())[:], 
-            rows=min(len(myfigures()),3), 
+            rows=min(len(myfigures()),4), 
             disabled=False,
             #description=''
             layout=widgets.Layout(width='100px')
             )
-        self.start_table = widgets.HTML()
+
+        self.par_data_chkbox = widgets.Checkbox(
+            value=True,
+            description='Parallel',
+            disabled=False,
+            indent=False,
+            layout=widgets.Layout(width='100px'))
+
+        self.refresh_chkbox = widgets.Checkbox(
+            value=False,
+            description='Refresh',
+            disabled=False,
+            indent=False,
+            layout=widgets.Layout(width='100px'))
+
+        self.alarms_chkbox = widgets.Checkbox(
+            value=True,
+            description='Alarms',
+            disabled=False,
+            indent=False,
+            layout=widgets.Layout(width='100px'))
+
+        self.warnings_chkbox = widgets.Checkbox(
+            value=True,
+            description='Warnings',
+            disabled=False,
+            indent=False,
+            layout=widgets.Layout(width='100px'))
+
+        self.annotations_chkbox = widgets.Checkbox(
+            value=True,
+            description='Annotations',
+            disabled=False,
+            indent=False,
+            layout=widgets.Layout(width='100px'))
+
+        #self.start_table = widgets.HTML()
+        self.start_table = widgets.Output()
 
         self.time_range = widgets.IntRangeSlider(
             value=[0, 100],
@@ -84,11 +121,16 @@ class Tab():
         return VBox([
                     HBox([
                         VBox([
-                            HBox([self.selected_engine, self.b_plots]),
+                            HBox([self.b_plots]),
+                            HBox([self.selected_engine]),
                             HBox([self.sno_slider, self.sno]),
                             #HBox([self.time_range, self.b_run2]),
                         ]),
-                        self.plotselection
+                        self.plot_selection,
+                        VBox([
+                            HBox([self.par_data_chkbox, self.alarms_chkbox, self.annotations_chkbox]),
+                            HBox([self.refresh_chkbox, self.warnings_chkbox])
+                        ])
                     ]),
                     self.start_table,
                     self.tab4_out
@@ -122,10 +164,14 @@ class Tab():
                     print(f'tab4 - ⌛ loading data ...')
 
         startversuch = rdfs.iloc[0]
-        print(f'Please Wait, loading data for Start No. {startversuch.no}')
+        status('tab4',f'⌛ Please Wait, loading data for Start No. {startversuch.no}')
         try:
-            #data = get_cycle_data3(fsm, startversuch, cycletime=1, silent=True, p_data=vset, t_range=plot_range)
-            data = get_cycle_data2(fsm, startversuch, cycletime=1, silent=True, p_data=vset, t_range=plot_range)
+            if self.par_data_chkbox.value:
+                # load data using concurrent.futures
+                data = get_cycle_data3(fsm, startversuch, cycletime=1, silent=True, p_data=vset, t_range=plot_range, p_refresh=self.refresh_chkbox.value)
+            else:
+                data = get_cycle_data2(fsm, startversuch, cycletime=1, silent=True, p_data=vset, t_range=plot_range, p_refresh=self.refresh_chkbox.value)
+
             data['bmep'] = data.apply(lambda x: V.fsm._e._calc_BMEP(x['Power_PowerAct'], V.fsm._e.Speed_nominal), axis=1)
             data['power_diff'] = pd.Series(np.gradient(data['Power_PowerAct']))
             if not VSC:
@@ -134,6 +180,15 @@ class Tab():
             ftitle = f"{fsm._e} ----- Start {startversuch['no']} {startversuch['mode']} | {startversuch['success']} | {startversuch['starttime'].round('S')}"
             fig_handles = []
             for doplot in plotselection:
+
+                res2_dict = {
+                    'actors':'synchronisation',
+                    'tecjet':'tecjet',
+                    'exhaust':'exhaust'
+                }
+
+                if res2_dict.get(doplot, '') in V.fsm.results['run2_content']:
+                    display(HTML(self.html_table(startversuch[V.fsm.results['run2_content'][res2_dict[doplot]]])))
                 dset = lfigures[doplot]
                 ltitle = f"{ftitle} | {doplot}"
                 if count_columns(dset) > 12: # no legend, if too many lines.
@@ -141,11 +196,14 @@ class Tab():
                 else:
                     fig = FSM_splot(fsm, startversuch, data, dset, title=ltitle, figsize=self.pfigsize)
 
-                fig = FSM_add_Notations(fig, fsm, startversuch)
+                if self.annotations_chkbox.value:
+                    fig = FSM_add_Notations(fig, fsm, startversuch)
                 disp_alarms(startversuch)
                 disp_warnings(startversuch)
-                fig = FSM_add_Alarms(fig, fsm, startversuch)
-                fig = FSM_add_Warnings(fig, fsm, startversuch)
+                if self.alarms_chkbox.value:
+                    fig = FSM_add_Alarms(fig, fsm, startversuch)
+                if self.warnings_chkbox.value:
+                    fig = FSM_add_Warnings(fig, fsm, startversuch)
                 fig_handles.append(bokeh_show(fig, notebook_handle=True))
             for h in fig_handles:
                 push_notebook(handle=h)
@@ -170,8 +228,25 @@ class Tab():
     def show_plots(self, but):
         with self.tab4_out:
             self.tab4_out.clear_output()
-            self.update_fig(x=self.sno.value, lfigures=V.lfigures, plotselection=self.plotselection.value, 
+            self.update_fig(x=self.sno.value, lfigures=V.lfigures, plotselection=self.plot_selection.value, 
                             vset=V.vset, plot_range=self.time_range.value, fsm=V.fsm)
+
+    def html_table(self, result_list):
+            table = pd.DataFrame(result_list).T
+            return table.style.set_table_styles([
+                {'selector':'th,tbody','props':'font-size:0.7rem; font-weight: bold; text-align:center; background-color: #D3D3D3; ' + \
+                                        'border: 1px solid black; border-collapse: collapse; margin: 0px; padding: 5px;'},
+                {'selector':'td','props':'font-size:0.7rem; text-align:center; min-width: 58px; background-color: #FFFFFF; '}]
+            ).format(
+                precision=2,
+                na_rep='-',
+#                formatter={
+#                    'starter': "{:.1f}",
+#                    'idle': "{:.1f}",
+#                    'ramprate':"{:.2f}",
+#                    'runout': lambda x: f"{x:0.1f}"
+#                }
+            ).hide().to_html()        
 
     def start_info(self,*args):
         if V.fsm is not None:
@@ -179,37 +254,27 @@ class Tab():
             if not rdf.empty:
                 sv = rdf.iloc[self.sno.value]
                 ltitle = f" Start No {sv['no']} from: {sv['starttime'].round('S')} to: {sv['endtime'].round('S')}"
-                summary = pd.DataFrame(sv[startstopFSM.run2filter_content]).T
-                r = summary.style.set_table_styles([
-                    {'selector':'th,tbody','props':'font-size:0.5rem; font-weight: bold; text-align:center; background-color: #D3D3D3; ' + \
-                                            'border: 0px solid black; border-collapse: collapse; margin: 0px; padding: 0px;'},
-                    {'selector':'td','props':'font-size:0.7rem; text-align:center; min-width: 58px;'}]
-                ).format(
-                    precision=2,
-                    na_rep='-',
-    #                formatter={
-    #                    'starter': "{:.1f}",
-    #                    'idle': "{:.1f}",
-    #                    'ramprate':"{:.2f}",
-    #                    'runout': lambda x: f"{x:0.1f}"
-    #                }
-                ).hide().to_html()
+                #r = self.html_table(sv[startstopFSM.run2filter_content])
+                r = self.html_table(sv[V.fsm.results['run2_content']['startstop']])
                 links = 'links to Myplant: | '
                 time_new_start, time_new_end = self.calc_time_range(sv)
-                for doplot in self.plotselection.options:
+                for doplot in self.plot_selection.options:
                     ll = V.e.myplant_workbench_link(time_new_start, time_new_end, V.e.get_dataItems(dat=cvset(mp,V.lfigures[doplot])),doplot)
                     links += f'{ll} | '
-                self.start_table.value = links + ltitle + '<br>' + r
+                #self.start_table.value = links + ltitle + '<br>' + r
+                with self.start_table:
+                    self.start_table.clear_output()
+                    display(HTML(links + ltitle + '<br>' + r))
 
-    def start_run2(self,b):
-        if V.fsm is not None:
-            rdf = V.fsm.starts
-            if not rdf.empty:
-                sv = rdf.iloc[self.sno.value]
-                V.fsm.run2_collectors_setup()
-                vset, tfrom, tto = V.fsm.run2_collectors_register(sv)
-                ldata = load_data(V.fsm, cycletime=1, tts_from=tfrom, tts_to=tto, silent=True, p_data=vset, p_forceReload=False, p_suffix='_individual', debug=False)
-                V.fsm.results = V.fsm.run2_collectors_collect(sv, V.fsm.results, ldata)
-                phases = list(V.fsm.results['starts'][self.sno]['startstoptiming'].keys())
-                V.fsm.self.startstopHandler._harvest_timings(V.fsm.results['starts'][self.sno], phases, V.fsm.results)
-                self.start_info() 
+    # def start_run2(self,b):
+    #     if V.fsm is not None:
+    #         rdf = V.fsm.starts
+    #         if not rdf.empty:
+    #             sv = rdf.iloc[self.sno.value]
+    #             V.fsm.run2_collectors_setup()
+    #             vset, tfrom, tto = V.fsm.run2_collectors_register(sv)
+    #             ldata = load_data(V.fsm, cycletime=1, tts_from=tfrom, tts_to=tto, silent=True, p_data=vset, p_forceReload=False, p_suffix='_individual', debug=False)
+    #             V.fsm.results = V.fsm.run2_collectors_collect(sv, V.fsm.results, ldata)
+    #             phases = list(V.fsm.results['starts'][self.sno]['startstoptiming'].keys())
+    #             V.fsm.self.startstopHandler._harvest_timings(V.fsm.results['starts'][self.sno], phases, V.fsm.results)
+    #             self.start_info() 

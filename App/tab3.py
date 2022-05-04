@@ -125,7 +125,7 @@ class Tab():
                 except Exception as err:
                     print('\n','no figure to display, Error: ', str(err))
 
-                vec = V.fsm.results['run2_content']
+                vec = V.fsm.results['run2_content']['startstop']
                 display(self.rde[vec].describe()
                             .style
                             .format(
@@ -139,8 +139,7 @@ class Tab():
                         }
                     ))
                 print()
-                #display(rde[startstopFSM.run2filter_content]
-                display(self.rde[V.fsm.results['run2_content']][::-1]
+                display(self.rde[V.fsm.results['run2_content']['startstop']][::-1]
                         .style
                         .hide()
                         .format(
