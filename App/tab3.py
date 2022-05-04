@@ -113,6 +113,18 @@ class Tab():
                 sdict ={'success':1, 'failed':0, 'undefined':0.5}
                 self.rde['isuccess'] = self.rde.apply(lambda x: sdict[x['success']], axis=1)
                 #vec = ['startpreparation','speedup','idle','synchronize','loadramp','targetload','ramprate','cumstarttime','targetoperation','rampdown','coolrun','runout','isuccess']
+                
+                dfigsize = (20,10)
+                dset = overview_figure()['basic']
+                dset = equal_adjust(dset, self.rde, do_not_adjust=[-1])
+                ftitle = f"{V.fsm._e}"
+                try:
+                    fig = dbokeh_chart(self.rde, dset, style='both', figsize=dfigsize ,title=ftitle);
+                    print()
+                    bokeh_show(fig)
+                except Exception as err:
+                    print('\n','no figure to display, Error: ', str(err))
+
                 vec = V.fsm.results['run2_content']
                 display(self.rde[vec].describe()
                             .style
@@ -126,18 +138,6 @@ class Tab():
                             'runout': lambda x: f"{x:0.1f}"
                         }
                     ))
-                
-                dfigsize = (20,10)
-                dset = overview_figure()['basic']
-                dset = equal_adjust(dset, self.rde, do_not_adjust=[-1])
-                ftitle = f"{V.fsm._e}"
-                try:
-                    fig = dbokeh_chart(self.rde, dset, style='both', figsize=dfigsize ,title=ftitle);
-                    print()
-                    bokeh_show(fig)
-                except Exception as err:
-                    print('\n','no figure to display, Error: ', str(err))
-
                 print()
                 #display(rde[startstopFSM.run2filter_content]
                 display(self.rde[V.fsm.results['run2_content']][::-1]

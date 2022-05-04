@@ -8,7 +8,7 @@ from dmyplant2 import cred, MyPlant, Engine, cplotdef, save_json, load_json
 
 try:
     cred()
-    mp = MyPlant(300)
+    mp = MyPlant(0)
 except Exception as err:
     print(str(err))
     sys.exit(1)
