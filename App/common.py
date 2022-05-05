@@ -37,6 +37,7 @@ def myfigures(e = None):
         {'col':['TecJet_GasPress1'],'_ylim': [0, 3], 'color':'rgba(255,0,0,0.4)', 'unit':'mbar'},
         {'col':['TecJet_GasTemp1'],'_ylim': [0, 3], 'color':'rgba(255,0,255,0.4)', 'unit':'°C'},
         {'col':['TecJet_GasDiffPress'],'_ylim': [0, 3], 'color':'rgba(0,255,0,0.4)', 'unit':'mbar'},
+        {'col':['TecJet_ValvePos1'],'ylim': [0, 200], 'color':'purple', 'unit':'%'},
         ],
         'lubrication' : [
         {'col':['Power_SetPower','Power_PowerAct'], 'ylim':(0,5000), 'color':['lightblue','red'], 'unit':'kW'},

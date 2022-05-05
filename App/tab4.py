@@ -98,7 +98,9 @@ class Tab():
             layout=widgets.Layout(width='100px'))
 
         #self.start_table = widgets.HTML()
-        self.start_table = widgets.Output()
+        self.start_table = widgets.Output(
+             layout=widgets.Layout(height='100px')
+             )
 
         self.time_range = widgets.IntRangeSlider(
             value=[0, 100],
