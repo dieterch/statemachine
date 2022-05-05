@@ -256,7 +256,7 @@ class Tab():
                 
     def fsm_save(self,b):
         if V.fsm is not None:
-            filename = './data/'+ V.fsm._e['Validation Engine'] + '.dfsm'
+            filename = f'./data/{V.fsm._e["serialNumber"]}_{V.fsm._e["Validation Engine"]}.dfsm'
             with tabs_out:
                 print(filename)
                 V.fsm.save_results(filename)

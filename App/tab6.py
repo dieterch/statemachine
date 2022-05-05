@@ -135,9 +135,9 @@ class Tab():
                     bokeh_show(fig3)            
                     
                 print()
-                display(rde[V.fsm.results['run2_content']].describe().style.format(precision=2, na_rep='-'))                
+                display(rde[V.fsm.results['run2_content']['tecjet']].describe().style.format(precision=2, na_rep='-'))                
                 print()
-                display(rde[V.fsm.results['run2_content']][::-1].style.format(precision=2,na_rep='-').hide())
+                display(rde[V.fsm.results['run2_content']['tecjet']][::-1].style.format(precision=2,na_rep='-').hide())
             else:
                 print('No Data available.')
     
@@ -172,11 +172,11 @@ class Tab():
                     bokeh_show(fig4)
 
                     print()
-                    display(rde[['no','ExhTempCylMax','ExhSpreadMax','ExhSpread_at_Max','Power_at_ExhTempCylMax']].describe()
+                    display(rde[V.fsm.results['run2_content']['exhaust']].describe()
                                 .style.format(precision=2, na_rep='-'))            
 
                     print()
-                    display(rde[['no','ExhTempCylMax','ExhSpreadMax','ExhSpread_at_Max','Power_at_ExhTempCylMax']]
+                    display(rde[V.fsm.results['run2_content']['exhaust']]
                                 .style.format(precision=2,na_rep='-').hide())
             else:
                 print('No Data available.')
@@ -235,10 +235,10 @@ class Tab():
 
 
                     print()
-                    display(rde[['rpm_dmax','rpm_dmin','rpm_spread', 'Lambda_rpm_max', 'TempOil_rpm_max', 'TempCoolWat_rpm_max']].describe()
+                    display(rde[V.fsm.results['run2_content']['synchronisation']].describe()
                                 .style.format(precision=2, na_rep='-'))
                     print()
-                    display(rde[['no','rpm_dmax','rpm_dmin','rpm_spread', 'Lambda_rpm_max', 'TempOil_rpm_max', 'TempCoolWat_rpm_max']]
+                    display(rde[V.fsm.results['run2_content']['synchronisation']]
                                 .style.format(precision=2,na_rep='-').hide())
             else:
                 print('No Data available.')
