@@ -16,7 +16,7 @@ from App.common import loading_bar, V, tabs_out
 class Tab():
     def __init__(self):
 
-        self.title = 'Playground'
+        self.title = '6. Run2 Results'
         self.dfigsize = V.dfigsize
         self.tab6_out = widgets.Output()
 
@@ -127,7 +127,7 @@ class Tab():
                         
                     ntitle = ftitle + ' | BMEP at Start vs TJ TJ_GasDiffPressMin in mbar '
                     fig3 = dbokeh_chart(rde, dr2set2, x='TJ_GasDiffPressMin', style='circle', figsize=self.dfigsize ,title=ntitle);
-                    fig3.add_layout(Span(location=24.5,
+                    fig3.add_layout(Span(location=V.fsm._e.BMEP,
                             dimension='width',x_range_name='default', y_range_name='0',line_color='red', line_dash='dashed', line_alpha=0.6))
                     #fig3.add_layout(Span(location=20.0,
                     #        dimension='width',x_range_name='default', y_range_name='1',line_color='blue', line_dash='dashed', line_alpha=0.6))
@@ -155,21 +155,48 @@ class Tab():
                 rda = rda[thefilter].reset_index(drop='index')
                 #rdb = rda
                 rde = rda #.fillna('')
-                #'ExhTempCylMax','ExhSpread_at_Max','Power_at_ExhTempCylMax'
+                # self._content = ['ExTCylMax',
+                #                 'ExTCylMaxPos',
+                #                 'ExTCylMin@Max',
+                #                 'ExTCylMin@MaxPos',
+                #                 'ExSpread@Max',
+                #                 'PWR@ExTCylMax',
+                #                 'ExSpreadMax',
+                #                 'ExTCylMax@SpreadMax',
+                #                 'ExTCylMax@SpreadMaxPos',
+                #                 'ExTCylMin@SpreadMax',
+                #                 'ExTCylMin@SpreadMaxPos',
+                #                 'PWR@ExSpreadMax']
                 if not rde.empty:
                     rde['datetime'] = pd.to_datetime(rde['starttime'])
+                    ntitle = f"{V.fsm._e}" + ' | Exhaust Temperture at Start, Max, Min & Spread (@ Max Temp)'
                     dr2set3 = [
-                            {'col':['ExhTempCylMax'],'_ylim': [4200, 4800], 'color':'red', 'unit':'°C'},
-                            {'col':['ExhSpreadMax','ExhSpread_at_Max'],'_ylim': [0, 100], 'color':['dodgerblue','blue'], 'unit':'°C'},
-                            {'col':['Power_at_ExhTempCylMax'],'_ylim': [0, 100], 'color':'orange', 'unit':'kW'},
+                            {'col':['ExTCylMax','ExTCylMin@Max'],'_ylim': [4200, 4800], 'color':['FireBrick','Crimson'], 'unit':'°C'},
+                            {'col':['ExTCylMaxNo','ExTCylMin@MaxNo'],'_ylim': [1, 24], 'color':['Thistle','Plum'], 'unit':'-'},
+                            {'col':['ExSpread@Max'],'_ylim': [0, 100], 'color':['dodgerblue'], 'unit':'°C'},
+                            {'col':['PWR@ExTCylMax'],'_ylim': [0, 100], 'color':['red'], 'unit':'kW'},
                             {'col':['synchronize'],'_ylim':(-20,400), 'color':'brown', 'unit':'sec'},
-                            {'col':['startpreparation'],'_ylim':(-1000,800), 'unit':'sec'},
+                            #{'col':['startpreparation'],'_ylim':(-1000,800), 'unit':'sec'},
                             {'col':['no'],'_ylim':(0,1000), 'color':['rgba(0,0,0,0.05)'] },
                             ]
                     dr2set3 = equal_adjust(dr2set3, rde, do_not_adjust=[5], minfactor=0.95, maxfactor=1.2)
-                    ntitle = f"{V.fsm._e}" + ' | Exhaust Temperture at Start, Max, Min & Spread.'
                     fig4 = dbokeh_chart(rde, dr2set3, style='both', figsize=self.dfigsize ,title=ntitle);
                     bokeh_show(fig4)
+
+                    print()
+                    ntitle = f"{V.fsm._e}" + ' | Exhaust Temperture at Start, Max, Min & Spread (@ Max Spread)'
+                    dr2set4 = [
+                            {'col':['ExTCylMax@SpreadMax','ExTCylMin@SpreadMax'],'_ylim': [4200, 4800], 'color':['FireBrick','Crimson'], 'unit':'°C'},
+                            {'col':['ExTCylMax@SpreadMaxNo','ExTCylMin@SpreadMaxNo'],'_ylim': [1, 24], 'color':['Thistle','Plum'], 'unit':'-'},
+                            {'col':['ExSpreadMax'],'_ylim': [0, 100], 'color':['dodgerblue'], 'unit':'°C'},
+                            {'col':['PWR@ExSpreadMax'],'_ylim': [0, 100], 'color':['red'], 'unit':'kW'},
+                            {'col':['synchronize'],'_ylim':(-20,400), 'color':'brown', 'unit':'sec'},
+                            #{'col':['startpreparation'],'_ylim':(-1000,800), 'unit':'sec'},
+                            {'col':['no'],'_ylim':(0,1000), 'color':['rgba(0,0,0,0.05)'] },
+                            ]
+                    dr2set4 = equal_adjust(dr2set4, rde, do_not_adjust=[5], minfactor=0.95, maxfactor=1.2)
+                    fig5 = dbokeh_chart(rde, dr2set4, style='both', figsize=self.dfigsize ,title=ntitle);
+                    bokeh_show(fig5)
 
                     print()
                     display(rde[V.fsm.results['run2_content']['exhaust']].describe()

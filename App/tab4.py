@@ -9,7 +9,7 @@ from ipywidgets import AppLayout, Button, Text, Select, Tab, Layout, VBox, HBox,
 from IPython.display import display, HTML
 from dmyplant2 import (
     cred, MyPlant, FSMOperator, startstopFSM, cplotdef, load_data, get_cycle_data2, get_cycle_data3, count_columns, 
-    FSM_splot, FSM_add_Notations, disp_alarms, disp_warnings, FSM_add_Alarms,
+    FSM_splot, FSM_add_Notations, FSM_add_StatesLines, disp_alarms, disp_warnings, FSM_add_Alarms,
     FSM_add_Warnings, bokeh_show, cvset
 )
 from bokeh.io import push_notebook #, show, output_notebook
@@ -97,6 +97,13 @@ class Tab():
             indent=False,
             layout=widgets.Layout(width='100px'))
 
+        self.stateslines_chkbox = widgets.Checkbox(
+            value=True,
+            description='States Lines',
+            disabled=False,
+            indent=False,
+            layout=widgets.Layout(width='100px'))
+
         #self.start_table = widgets.HTML()
         self.start_table = widgets.Output(
              layout=widgets.Layout(height='100px')
@@ -131,7 +138,7 @@ class Tab():
                         self.plot_selection,
                         VBox([
                             HBox([self.par_data_chkbox, self.alarms_chkbox, self.annotations_chkbox]),
-                            HBox([self.refresh_chkbox, self.warnings_chkbox])
+                            HBox([self.refresh_chkbox, self.warnings_chkbox, self.stateslines_chkbox])
                         ])
                     ]),
                     self.start_table,
@@ -200,6 +207,9 @@ class Tab():
 
                 if self.annotations_chkbox.value:
                     fig = FSM_add_Notations(fig, fsm, startversuch)
+                if self.stateslines_chkbox.value:
+                    fig = FSM_add_StatesLines(fig, fsm, startversuch)
+
                 disp_alarms(startversuch)
                 disp_warnings(startversuch)
                 if self.alarms_chkbox.value:
