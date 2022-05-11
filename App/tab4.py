@@ -133,7 +133,7 @@ class Tab():
                             HBox([self.b_plots]),
                             HBox([self.selected_engine]),
                             HBox([self.sno_slider, self.sno]),
-                            #HBox([self.time_range, self.b_run2]),
+                            HBox([self.time_range]),
                         ]),
                         self.plot_selection,
                         VBox([

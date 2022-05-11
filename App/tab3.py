@@ -94,6 +94,9 @@ class Tab():
             tabs_out.clear_output()
             print('tab3')
 
+    def filter_msg(self, df, mnum):
+        return any([m['msg']['name'] == str(mnum) for m in df['alarms']] + [m['msg']['name'] == str(mnum) for m in df['warnings']])
+
     #@tab3_out.capture(clear_output=True)
     def show_overview(self,b):
         with self.tab3_out:
@@ -105,6 +108,8 @@ class Tab():
                 ((self.rda['W'] > 0) | ('Warnings' not in self.alarm_warning.value)) & 
                 ((self.rda['A'] > 0) | ('Alarms' not in self.alarm_warning.value))
             )
+            if self.msg_no.value != '':
+                self.rda = self.rda[self.rda.apply(lambda x: self.filter_msg(x, self.msg_no.value), axis=1)] 
             self.rda = self.rda[thefilter].reset_index(drop='index')
             #rdb = rda
             self.rde = self.rda #.fillna('')
