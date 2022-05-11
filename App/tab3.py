@@ -57,12 +57,21 @@ class Tab():
             description='msg no:',
             layout=widgets.Layout(max_width='200px'))
 
+        self.show_only_messages = widgets.Checkbox(
+            value=False,
+            description='Show only messages',
+            disabled=False,
+            indent=False,
+            layout=widgets.Layout(width='100px')
+        )
+
         self.selected_engine = widgets.Text(
             value='-', 
             description='selected:', 
             disabled=True, 
             layout=widgets.Layout(width='603px')
         )
+
 
         self.t3_button = widgets.Button(
             description='Overview',
@@ -75,7 +84,7 @@ class Tab():
     def tab(self):
         return widgets.VBox(
             [widgets.HBox([self.selected_engine,self.t3_button]), 
-            widgets.HBox([self.mo,self.succ,widgets.VBox([self.alarm_warning,self.msg_no])]),
+            widgets.HBox([self.mo,self.succ,widgets.VBox([self.alarm_warning,self.msg_no]),self.show_only_messages]),
             self.tab3_out],
             layout=widgets.Layout(min_height=V.hh))
 
@@ -167,10 +176,14 @@ class Tab():
                         i,row = next(rowgen)
                         if row['AW']:
                             if i-k > 0:
-                                display_fmt(self.rde.iloc[k:i])
-                            display_fmt(row.to_frame().T)
-                            disp_alwr(row['alarms'])
-                            disp_alwr(row['warnings'])
+                                if not self.show_only_messages.value:
+                                    display_fmt(self.rde.iloc[k:i])
+                            if not self.show_only_messages.value:
+                                display_fmt(row.to_frame().T)
+                            else:
+                                print('--------------')
+                            disp_alwr(row,'alarms')
+                            disp_alwr(row,'warnings')
                             k = i + 1
                 except StopIteration:
                     pass

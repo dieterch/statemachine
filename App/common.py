@@ -168,7 +168,8 @@ def status(tbname ,text=''):
         tabs_out.clear_output()
         print(f'{tbname}{" - " if text != "" else ""}{text}')
 
-def disp_alwr(rec):
+def disp_alwr(row, key):
+    rec = row[key]
     style = '''<style>
         table, 
         td, 
@@ -178,12 +179,14 @@ def disp_alwr(rec):
             padding: 0px 14px 0px 2px; 
             margin: 0px;
             font-size:0.9rem;
+            min-width: 100px;
         }
     </style>'''
     ll = []
     for m in rec:
         ll.append({
             'datetime':pd.to_datetime(int(m['msg']['timestamp'])*1e6).strftime('%Y-%m-%d %H:%M:%S'),
+            'sno': row['no'],
             'state': m['state'],
             'number': m['msg']['name'],
             'type': 'Alarm' if m['msg']['severity'] == 800 else 'Warning',
