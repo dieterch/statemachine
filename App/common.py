@@ -3,6 +3,7 @@ import os, sys
 import pickle
 import pandas as pd; pd.options.mode.chained_assignment = None
 import ipywidgets as widgets
+from IPython.display import display, HTML
 from ipywidgets import AppLayout, Button, Text, Select, Tab, Layout, VBox, HBox, Label, HTML, interact, interact_manual, interactive, IntSlider, Output
 from dmyplant2 import cred, MyPlant, Engine, cplotdef, save_json, load_json
 
@@ -132,7 +133,7 @@ class V:
     selected = ''
     selected_number = ''
     modes_value = ['MAN','AUTO']
-    succ_value = ['success']
+    succ_value = ['undefined','success']
     alarm_warning_value = ['-']
     query_list = []
 
@@ -166,3 +167,54 @@ def status(tbname ,text=''):
     with tabs_out:
         tabs_out.clear_output()
         print(f'{tbname}{" - " if text != "" else ""}{text}')
+
+def disp_alwr(rec):
+    style = '''<style>
+        table, 
+        td, 
+        th {
+            border: 0px solid grey;
+            border-collapse: collapse;
+            padding: 0px 14px 0px 2px; 
+            margin: 0px;
+            font-size:0.9rem;
+        }
+    </style>'''
+    ll = []
+    for m in rec:
+        ll.append({
+            'datetime':pd.to_datetime(int(m['msg']['timestamp'])*1e6).strftime('%Y-%m-%d %H:%M:%S'),
+            'state': m['state'],
+            'number': m['msg']['name'],
+            'type': 'Alarm' if m['msg']['severity'] == 800 else 'Warning',
+            'severity': m['msg']['severity'],
+            'message': m['msg']['message']
+        })
+    if len(rec) > 0:
+        display(HTML(style + pd.DataFrame(ll).to_html(index=False, header=False)))
+
+def display_fmt(df):
+    display(df[['starttime'] + V.fsm.results['run2_content']['startstop']]                    
+                        .style
+                        .hide()
+                        .format(
+                    precision=2,
+                    na_rep='-',
+                    formatter={
+                        'starttime': "{:%Y-%m-%d %H:%M:%S %z}",
+                        'startpreparation': "{:.0f}",                        
+                        'starter': "{:.1f}",
+                        'speedup': "{:.1f}",
+                        'idle': "{:.1f}",
+                        'synchronize': "{:.1f}",
+                        'loadramp': "{:.0f}",
+                        'cumstarttime': "{:.0f}",
+                        'targetload': "{:.0f}",
+                        'ramprate':"{:.2f}",
+                        'maxload': "{:.0f}",
+                        'targetoperation': "{:.0f}",
+                        'rampdown': "{:.1f}",
+                        'coolrun': "{:.1f}",
+                        'runout': lambda x: f"{x:0.1f}"
+                    }
+                ))

@@ -4,10 +4,10 @@ import pandas as pd; pd.options.mode.chained_assignment = None
 from datetime import datetime, date
 import ipywidgets as widgets
 #from ipywidgets import AppLayout, Button, Text, Select, Tab, Layout, VBox, HBox, Label, HTML, interact, interact_manual, interactive, IntSlider, Output
-from IPython.display import display
+from IPython.display import display, HTML
 from dmyplant2 import cred, MyPlant
 from dmyplant2 import FSMOperator, equal_adjust, dbokeh_chart, bokeh_show
-from App.common import loading_bar, V, overview_figure, tabs_out
+from App.common import loading_bar, V, overview_figure, tabs_out, disp_alwr, display_fmt
 #from App import tab2
 
 #########################################
@@ -27,7 +27,7 @@ class Tab():
         
         self.mo = widgets.SelectMultiple( 
             options=['undefined','OFF','MAN','AUTO'], 
-            value=['MAN','AUTO'], 
+            value=V.modes_value, 
             rows=4, 
             description='modes: ', 
             disabled=False,
@@ -36,7 +36,7 @@ class Tab():
 
         self.succ = widgets.SelectMultiple( 
             options=['success','failed','undefined'], 
-            value=['success'], 
+            value=V.succ_value, 
             rows=4, 
             description='success: ', 
             disabled=False,
@@ -94,6 +94,9 @@ class Tab():
             tabs_out.clear_output()
             print('tab3')
 
+    def filter_msg(self, df, mnum):
+        return any([m['msg']['name'] == str(mnum) for m in df['alarms']] + [m['msg']['name'] == str(mnum) for m in df['warnings']])
+
     #@tab3_out.capture(clear_output=True)
     def show_overview(self,b):
         with self.tab3_out:
@@ -105,6 +108,8 @@ class Tab():
                 ((self.rda['W'] > 0) | ('Warnings' not in self.alarm_warning.value)) & 
                 ((self.rda['A'] > 0) | ('Alarms' not in self.alarm_warning.value))
             )
+            if self.msg_no.value != '':
+                self.rda = self.rda[self.rda.apply(lambda x: self.filter_msg(x, self.msg_no.value), axis=1)] 
             self.rda = self.rda[thefilter].reset_index(drop='index')
             #rdb = rda
             self.rde = self.rda #.fillna('')
@@ -139,19 +144,37 @@ class Tab():
                         }
                     ))
                 print()
-                display(self.rde[V.fsm.results['run2_content']['startstop']][::-1]
-                        .style
-                        .hide()
-                        .format(
-                    precision=2,
-                    na_rep='-',
-                    formatter={
-                        'starter': "{:.1f}",
-                        'idle': "{:.1f}",
-                        'ramprate':"{:.2f}",
-                        'runout': lambda x: f"{x:0.1f}"
-                    }
-                ))
+                # display(self.rde[['starttime'] + V.fsm.results['run2_content']['startstop']][::-1]
+                #         .style
+                #         .hide()
+                #         .format(
+                #     precision=2,
+                #     na_rep='-',
+                #     formatter={
+                #         'starttime': "{:%Y-%m-%d %H:%M:%S %z}",
+                #         'starter': "{:.1f}",
+                #         'idle': "{:.1f}",
+                #         'ramprate':"{:.2f}",
+                #         'runout': lambda x: f"{x:0.1f}"
+                #     }
+                # ))
+                self.rde['AW'] = self.rde.apply(lambda x: x['A'] + x['W'] > 0, axis=1)
+                self.rde = self.rde[::-1].reset_index()
+                j = 0; k = 0
+                rowgen = self.rde.iterrows()
+                try:
+                    while True:
+                        i,row = next(rowgen)
+                        if row['AW']:
+                            if i-k > 0:
+                                display_fmt(self.rde.iloc[k:i])
+                            display_fmt(row.to_frame().T)
+                            disp_alwr(row['alarms'])
+                            disp_alwr(row['warnings'])
+                            k = i + 1
+                except StopIteration:
+                    pass
+
             else:
                 print()
                 print('Empty DataFrame.')
