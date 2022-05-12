@@ -185,8 +185,8 @@ def disp_alwr(row, key):
     ll = []
     for m in rec:
         ll.append({
-            'datetime':pd.to_datetime(int(m['msg']['timestamp'])*1e6).strftime('%Y-%m-%d %H:%M:%S'),
             'sno': row['no'],
+            'datetime':pd.to_datetime(int(m['msg']['timestamp'])*1e6).strftime('%Y-%m-%d %H:%M:%S'),
             'state': m['state'],
             'number': m['msg']['name'],
             'type': 'Alarm' if m['msg']['severity'] == 800 else 'Warning',
