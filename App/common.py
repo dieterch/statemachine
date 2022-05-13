@@ -1,7 +1,9 @@
 from dataclasses import dataclass
 import os, sys
 import pickle
-import pandas as pd; pd.options.mode.chained_assignment = None
+import pandas as pd; 
+pd.options.mode.chained_assignment = None
+pd.set_option("display.precision", 2)
 import ipywidgets as widgets
 from IPython.display import display, HTML
 from ipywidgets import AppLayout, Button, Text, Select, Tab, Layout, VBox, HBox, Label, HTML, interact, interact_manual, interactive, IntSlider, Output
@@ -178,8 +180,8 @@ def disp_alwr(row, key):
             border-collapse: collapse;
             padding: 0px 14px 0px 2px; 
             margin: 0px;
-            font-size:0.9rem;
-            min-width: 100px;
+            font-size:0.7rem;
+            /* min-width: 100px; */
         }
     </style>'''
     ll = []
@@ -199,6 +201,9 @@ def disp_alwr(row, key):
 def display_fmt(df):
     display(df[['starttime'] + V.fsm.results['run2_content']['startstop']]                    
                         .style
+                        .set_table_styles([
+                            {'selector':'table,td,th', 'props': 'font-size: 0.7rem; '}
+                        ])
                         .hide()
                         .format(
                     precision=2,

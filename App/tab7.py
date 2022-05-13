@@ -29,7 +29,16 @@ class Tab():
             self.rde = V.rdf
             self.rde['starttime'] = self.rde['starttime'].dt.strftime('%d.%m.%Y %H:%M:%S')
             #self.rde[['no','startpreparation','starter','speedup','idle','synchronize','loadramp','cumstarttime','targetload','ramprate','maxload','targetoperation','rampdown','coolrun','runout','A', 'W']] = self.rde[['no','startpreparation','starter','speedup','idle','synchronize','loadramp','cumstarttime','targetload','ramprate','maxload','targetoperation','rampdown','coolrun','runout','A', 'W']].applymap(lambda x: '{0:.2f}'.format(x))
-            self.rde.fillna('-', inplace=True)
+
+            self.rde = self.rde.fillna(0.0, inplace=True)
+            self.rde = self.rde.infer_objects()
+            for k in ['no','A', 'W']:
+                self.rde[k] = self.rde[k].astype(np.int32)
+            for k in ['startpreparation','speedup','synchronize','loadramp','cumstarttime','targetload','maxload','targetoperation','rampdown','runout']:
+                self.rde[k] = self.rde[k].astype(np.float_).round(1)
+            for k in ['starter','idle','ramprate','coolrun']:
+                self.rde[k] = self.rde[k].astype(np.float_).round(2)
+            #self.rde.fillna('-', inplace=True)
             w = rt.RegularTableWidget(self.rde[['starttime'] + V.fsm.results['run2_content']['startstop']])
             display(w)
             #self.w = rt.RegularTableWidget(V.rdf[['starttime'] + V.fsm.results['run2_content']['startstop']])

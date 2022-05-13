@@ -142,6 +142,9 @@ class Tab():
                 vec = V.fsm.results['run2_content']['startstop']
                 display(self.rde[vec].describe()
                             .style
+                            .set_table_styles([
+                                {'selector':'table,td,th', 'props': 'font-size: 0.7rem; '}
+                            ])
                             .format(
                         precision=0,
                         na_rep='-',
