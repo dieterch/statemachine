@@ -133,7 +133,7 @@ class Tab():
                             HBox([self.b_plots]),
                             HBox([self.selected_engine]),
                             HBox([self.sno_slider, self.sno]),
-                            HBox([self.time_range]),
+                            #HBox([self.time_range]),
                         ]),
                         self.plot_selection,
                         VBox([
@@ -165,6 +165,8 @@ class Tab():
 
 
     def update_fig(self, x=0, lfigures=V.lfigures, plotselection=V.plotdef, vset=V.vset, plot_range=(0,100), debug=False, fsm=V.fsm, VSC=False):
+        if V.fsm is None:
+            return
         rdfs = V.rdf[V.rdf.no == x]
         if not rdfs.empty:
             if not VSC:

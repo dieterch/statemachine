@@ -97,13 +97,11 @@ class Tab():
 
     #@tab5_out.capture(clear_output=True)
     def do_refresh(self,but):
-        with self.tab5_out:
-            self.tab5_out.clear_output()
-            print()
-            print('Please Wait ...')
-            display(loading_bar)
+        with tabs_out:
+            tabs_out.clear_output()
+            print('tab5 - ⌛ refresh installed fleet.')
             mp._fetch_installed_base(); # refresh local installed fleet database
-            self.tab5_out.clear_output()
+            tabs_out.clear_output()
 
     #@tab5_out.capture(clear_output=True)
     def do_lookupDI(self,b):

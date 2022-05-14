@@ -109,88 +109,89 @@ class Tab():
     #@tab3_out.capture(clear_output=True)
     def show_overview(self,b):
         with self.tab3_out:
-            self.tab3_out.clear_output()
-            self.rda = V.rdf[:].reset_index(drop='index')
-            thefilter = (
-                (self.rda['mode'].isin(self.mo.value)) & 
-                (self.rda['success'].isin(self.succ.value)) & 
-                ((self.rda['W'] > 0) | ('Warnings' not in self.alarm_warning.value)) & 
-                ((self.rda['A'] > 0) | ('Alarms' not in self.alarm_warning.value))
-            )
-            if self.msg_no.value != '':
-                self.rda = self.rda[self.rda.apply(lambda x: self.filter_msg(x, self.msg_no.value), axis=1)] 
-            self.rda = self.rda[thefilter].reset_index(drop='index')
-            #rdb = rda
-            self.rde = self.rda #.fillna('')
-            if not self.rde.empty:
-                self.rde['datetime'] = pd.to_datetime(self.rde['starttime'])
-                sdict ={'success':1, 'failed':0, 'undefined':0.5}
-                self.rde['isuccess'] = self.rde.apply(lambda x: sdict[x['success']], axis=1)
-                #vec = ['startpreparation','speedup','idle','synchronize','loadramp','targetload','ramprate','cumstarttime','targetoperation','rampdown','coolrun','runout','isuccess']
-                
-                dfigsize = (20,10)
-                dset = overview_figure()['basic']
-                dset = equal_adjust(dset, self.rde, do_not_adjust=[-1])
-                ftitle = f"{V.fsm._e}"
-                try:
-                    fig = dbokeh_chart(self.rde, dset, style='both', figsize=dfigsize ,title=ftitle);
+            if V.fsm is not None:
+                self.tab3_out.clear_output()
+                self.rda = V.rdf[:].reset_index(drop='index')
+                thefilter = (
+                    (self.rda['mode'].isin(self.mo.value)) & 
+                    (self.rda['success'].isin(self.succ.value)) & 
+                    ((self.rda['W'] > 0) | ('Warnings' not in self.alarm_warning.value)) & 
+                    ((self.rda['A'] > 0) | ('Alarms' not in self.alarm_warning.value))
+                )
+                if self.msg_no.value != '':
+                    self.rda = self.rda[self.rda.apply(lambda x: self.filter_msg(x, self.msg_no.value), axis=1)] 
+                self.rda = self.rda[thefilter].reset_index(drop='index')
+                #rdb = rda
+                self.rde = self.rda #.fillna('')
+                if not self.rde.empty:
+                    self.rde['datetime'] = pd.to_datetime(self.rde['starttime'])
+                    sdict ={'success':1, 'failed':0, 'undefined':0.5}
+                    self.rde['isuccess'] = self.rde.apply(lambda x: sdict[x['success']], axis=1)
+                    #vec = ['startpreparation','speedup','idle','synchronize','loadramp','targetload','ramprate','cumstarttime','targetoperation','rampdown','coolrun','runout','isuccess']
+                    
+                    dfigsize = (20,10)
+                    dset = overview_figure()['basic']
+                    dset = equal_adjust(dset, self.rde, do_not_adjust=[-1])
+                    ftitle = f"{V.fsm._e}"
+                    try:
+                        fig = dbokeh_chart(self.rde, dset, style='both', figsize=dfigsize ,title=ftitle);
+                        print()
+                        bokeh_show(fig)
+                    except Exception as err:
+                        print('\n','no figure to display, Error: ', str(err))
+
+                    vec = V.fsm.results['run2_content']['startstop']
+                    display(self.rde[vec].describe()
+                                .style
+                                .set_table_styles([
+                                    {'selector':'table,td,th', 'props': 'font-size: 0.7rem; '}
+                                ])
+                                .format(
+                            precision=0,
+                            na_rep='-',
+                            formatter={
+                                'starter': "{:.1f}",
+                                'idle': "{:.1f}",
+                                'ramprate':"{:.2f}",
+                                'runout': lambda x: f"{x:0.1f}"
+                            }
+                        ))
                     print()
-                    bokeh_show(fig)
-                except Exception as err:
-                    print('\n','no figure to display, Error: ', str(err))
-
-                vec = V.fsm.results['run2_content']['startstop']
-                display(self.rde[vec].describe()
-                            .style
-                            .set_table_styles([
-                                {'selector':'table,td,th', 'props': 'font-size: 0.7rem; '}
-                            ])
-                            .format(
-                        precision=0,
-                        na_rep='-',
-                        formatter={
-                            'starter': "{:.1f}",
-                            'idle': "{:.1f}",
-                            'ramprate':"{:.2f}",
-                            'runout': lambda x: f"{x:0.1f}"
-                        }
-                    ))
-                print()
-                # display(self.rde[['starttime'] + V.fsm.results['run2_content']['startstop']][::-1]
-                #         .style
-                #         .hide()
-                #         .format(
-                #     precision=2,
-                #     na_rep='-',
-                #     formatter={
-                #         'starttime': "{:%Y-%m-%d %H:%M:%S %z}",
-                #         'starter': "{:.1f}",
-                #         'idle': "{:.1f}",
-                #         'ramprate':"{:.2f}",
-                #         'runout': lambda x: f"{x:0.1f}"
-                #     }
-                # ))
-                self.rde['AW'] = self.rde.apply(lambda x: x['A'] + x['W'] > 0, axis=1)
-                self.rde = self.rde[::-1].reset_index()
-                j = 0; k = 0
-                rowgen = self.rde.iterrows()
-                try:
-                    while True:
-                        i,row = next(rowgen)
-                        if row['AW']:
-                            if i-k > 0:
+                    # display(self.rde[['starttime'] + V.fsm.results['run2_content']['startstop']][::-1]
+                    #         .style
+                    #         .hide()
+                    #         .format(
+                    #     precision=2,
+                    #     na_rep='-',
+                    #     formatter={
+                    #         'starttime': "{:%Y-%m-%d %H:%M:%S %z}",
+                    #         'starter': "{:.1f}",
+                    #         'idle': "{:.1f}",
+                    #         'ramprate':"{:.2f}",
+                    #         'runout': lambda x: f"{x:0.1f}"
+                    #     }
+                    # ))
+                    self.rde['AW'] = self.rde.apply(lambda x: x['A'] + x['W'] > 0, axis=1)
+                    self.rde = self.rde[::-1].reset_index()
+                    j = 0; k = 0
+                    rowgen = self.rde.iterrows()
+                    try:
+                        while True:
+                            i,row = next(rowgen)
+                            if row['AW']:
+                                if i-k > 0:
+                                    if not self.show_only_messages.value:
+                                        display_fmt(self.rde.iloc[k:i])
                                 if not self.show_only_messages.value:
-                                    display_fmt(self.rde.iloc[k:i])
-                            if not self.show_only_messages.value:
-                                display_fmt(row.to_frame().T)
-                            else:
-                                print('--------------')
-                            disp_alwr(row,'alarms')
-                            disp_alwr(row,'warnings')
-                            k = i + 1
-                except StopIteration:
-                    pass
+                                    display_fmt(row.to_frame().T)
+                                else:
+                                    print('--------------')
+                                disp_alwr(row,'alarms')
+                                disp_alwr(row,'warnings')
+                                k = i + 1
+                    except StopIteration:
+                        pass
 
-            else:
-                print()
-                print('Empty DataFrame.')
+                else:
+                    print()
+                    print('Empty DataFrame.')

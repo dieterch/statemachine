@@ -231,7 +231,7 @@ class Tab():
                 print()
                 V.fsm.run0(enforce=True, silent=False, debug=False)
                 self.check_buttons()
-                print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
+                #print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
 
     def fsm_run1(self,b):
         with self.tab2_out:
@@ -240,7 +240,7 @@ class Tab():
                 V.fsm.run1(silent=False, successtime=300, debug=False) # run Finite State Machine
                 self.check_buttons()
                 V.rdf = V.fsm.starts
-                print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
+                #print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
 
                 
     def fsm_run2(self,b):
@@ -251,7 +251,7 @@ class Tab():
                 V.fsm.run2(silent = False, debug=True, p_refresh=self.run2_refresh_chkbox.value)
                 self.check_buttons()
                 V.rdf = V.fsm.starts
-                print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
+                #print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
 
                 
     def fsm_save(self,b):
