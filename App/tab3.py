@@ -59,7 +59,7 @@ class Tab():
 
         self.show_only_messages = widgets.Checkbox(
             value=False,
-            description='Show only messages',
+            description="msg's only",
             disabled=False,
             indent=False,
             layout=widgets.Layout(width='100px')

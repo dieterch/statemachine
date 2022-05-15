@@ -44,10 +44,18 @@ class Tab():
         )
         self.b_sync.on_click(self.show_sync)
 
+        self.b_oil = widgets.Button(
+            description='Oil Circuit Results',
+            disabled=False,
+            button_style='primary',
+            tooltip='Show Oil Circuit measurements at start Results collected in Run2',
+        )
+        self.b_oil.on_click(self.show_oil)
+
     @property
     def tab(self):
         return widgets.VBox([
-            widgets.HBox([self.b_tecjet,self.b_exhaust,self.b_sync]),
+            widgets.HBox([self.b_tecjet,self.b_exhaust,self.b_sync,self.b_oil]),
             self.tab6_out],
             layout=widgets.Layout(min_height=V.hh))
 
@@ -270,3 +278,53 @@ class Tab():
             else:
                 print('No Data available.')
 
+    def show_oil(self,b): # oil callback
+        with self.tab6_out:
+            self.tab6_out.clear_output()
+            if ((V.fsm is not None) and V.fsm.starts.iloc[0]['run2']):
+                rda = V.fsm.starts.reset_index(drop='index')
+                thefilter = (
+                    (rda['mode'].isin(V.modes_value)) & 
+                    (rda['success'].isin(V.succ_value)) & 
+                    ((rda['W'] > 0) | ('Warnings' not in V.alarm_warning_value)) & 
+                    ((rda['A'] > 0) | ('Alarms' not in V.alarm_warning_value))
+                )
+                rda = rda[thefilter].reset_index(drop='index')
+                global rdb
+                rdb = rda
+                rde = rda #.fillna('')
+                # ['PressOilMax','PressOilDifMax','TempOil_min']
+                if not rde.empty:
+                    rde['datetime'] = pd.to_datetime(rde['starttime'])
+                    dr2set3 = [
+                        {'col':['PressOilMax'],'_ylim': [0, 20], 'color':'brown', 'unit':'bar'},
+                        {'col':['PressOilDifMax'],'_ylim': [0, 20], 'color':'black', 'unit':'bar'},
+                        {'col':['TempOil_min'],'_ylim': [0, 100], 'color':'#2171b5', 'unit':'°C'},
+                        {'col':['W'],'_ylim':(-1,200), 'color':['rgba(255,165,0,0.3)'] },
+                        {'col':['no'],'_ylim':(0,1000), 'color':['rgba(0,0,0,0.05)'] }
+                    ]
+                    dr2set3 = equal_adjust(dr2set3, rde, do_not_adjust=['no'], minfactor=0.95, maxfactor=1.2)
+                    ntitle = f"{V.fsm._e}" + ' | Oil Pressure Max, Oil Filter DP max & Oil Temp vs Starts'
+                    fig4 = dbokeh_chart(rde, dr2set3, style='both', figsize=self.dfigsize ,title=ntitle);
+                    bokeh_show(fig4)
+
+                    dr2set3 = [
+                        {'col':['PressOilMax'],'_ylim': [0, 20], 'color':'brown', 'unit':'bar'},
+                        {'col':['PressOilDifMax'],'_ylim': [0, 20], 'color':'black', 'unit':'bar'},
+                        {'col':['W'],'_ylim':(-1,200), 'color':['rgba(255,165,0,0.3)'] },
+                        {'col':['no'],'_ylim':(0,1000), 'color':['rgba(0,0,0,0.05)'] }
+                    ]
+                    dr2set3 = equal_adjust(dr2set3, rde, do_not_adjust=['no'], minfactor=0.95, maxfactor=1.2)
+                    ntitle = f"{V.fsm._e}" + ' | Speed Max, Min & Spread between Speedmax and GC On'
+                    fig4 = dbokeh_chart(rde, dr2set3, x='TempOil_min', style='circle', figsize=self.dfigsize ,title=ntitle);
+                    bokeh_show(fig4)
+
+
+                    print()
+                    display(rde[V.fsm.results['run2_content']['lubrication']].describe()
+                                .style.format(precision=2, na_rep='-'))
+                    print()
+                    display(rde[V.fsm.results['run2_content']['lubrication']]
+                                .style.format(precision=2,na_rep='-').hide())
+            else:
+                print('No Data available.')

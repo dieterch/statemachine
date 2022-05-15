@@ -83,7 +83,8 @@ def overview_figure():
         {'col':['loadramp'],'_ylim':(-150,900), 'color':'red'},
         {'col':['speedup'],'_ylim':(-100,200), 'color':'orange'},
         {'col':['synchronize'],'_ylim':(-20,400)},
-        {'col':['startpreparation'],'_ylim':(-1000,800)},
+        {'col':['oilfilling'],'_ylim':(-1000,800)},
+        {'col':['degasing'],'_ylim':(-1000,800)},
         {'col':['W','A','isuccess'],'_ylim':(-1,200), 'color':['rgba(255,165,0,0.3)','rgba(255,0,0,0.3)','rgba(0,128,0,0.2)'] },
         {'col':['no'],'_ylim':(0,1000), 'color':['rgba(0,0,0,0.1)'] },
         #{'col':['W','A','no'],'ylim':(-1,200), 'color':['rgba(255,165,0,0.3)','rgba(255,0,0,0.3)','rgba(0,0,0,0.1)'] }
