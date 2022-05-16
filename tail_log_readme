@@ -1,0 +1,2 @@
+REM Execute the following line in Windows Powershell to see the FSM.log tail while running the App 
+Get-Content FSM.log -Wait -Tail 10
