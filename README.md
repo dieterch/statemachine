@@ -5,11 +5,9 @@ FSM App
 # Setup
 ## Install Miniconda
 
-```
-download & install https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe
-Search for 'miniconda' in Windows Start Menu and open 'Anaconda Prompt (miniconda3)'. 
-pin it to the taskbar
-```
+- download & install https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe
+- Search for 'miniconda' in Windows Start Menu and open 'Anaconda Prompt (miniconda3)'. 
+- pin it to the taskbar
 
 ## Install 
 
