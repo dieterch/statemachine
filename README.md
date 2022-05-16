@@ -14,7 +14,7 @@ FSM App
 - download https://github.com/DieterChvatal/dmyplant4/archive/refs/tags/v0.0.4.zip
 - download https://github.com/DieterChvatal/statemachine/archive/refs/tags/v0.0.1.zip
 - Create %userprofile%\Scripts
-- Create a file conda-install.bat in %userprofile%\Scripts
+- Create a file #conda-install.bat# in %userprofile%\Scripts
 
 copy the following content into this file: 
 
