@@ -14,17 +14,15 @@ FSM App
 - download https://github.com/DieterChvatal/statemachine/archive/refs/tags/v0.0.1.zip
 - Create Scripts Folder **mkdir %userprofile%\Documents\Scripts**
 - Change to Scripts Folder **cd %userprofile%\Documents\Scripts**
-- Create a batchfile by **notepad conda-install.bat**
-u
-copy the following content into this file: 
-
+- Create a batchfile **notepad conda-install.bat**
+- copy the following content into this file: 
 ```
 @echo off
 echo "Install FSM App via conda"
 echo "Dieter Chvatal    05/2022
 echo "========================="
-unzip
 call conda install -k -y -c conda-forge "arrow==1.0.3" pandas matplotlib bokeh scipy IPython jupyterlab ipywidgets ipyfilechooser ipyregulartable voila pyarrow pytables nodejs
+call python -m unzip.py
 cd statemachine
 jupyter trust App.ipynb
 cd ..
@@ -35,6 +33,24 @@ cd ..
 echo "======================"
 echo "installation completed"
 ```
+- Create a python file **notepad unzip.py**
+copy the following content into this file
+```
+import zipfile, os
 
-open Anaconda Prompt and change to %userprofile%\Scripts
-execute conda-install.bat
+with zipfile.ZipFile(os.path.expandvars("%userprofile%") + "\\Downloads\\dmyplant4-0.0.4.zip", 'r') as zip_ref:
+    zip_ref.extractall(os.path.expandvars("%userprofile%") + "\\Documents\\Scripts")
+os.rename(os.path.expandvars("%userprofile%") + "\\Documents\\Scripts\\dmyplant4-0.0.4", os.path.expandvars("%userprofile%") + "\\Documents\\Scripts\\dmyplant4")
+
+with zipfile.ZipFile(os.path.expandvars("%userprofile%") + "\\Downloads\\statemachine-0.0.1.zip", 'r') as zip_ref:
+    zip_ref.extractall(os.path.expandvars("%userprofile%") + "\\Documents\\Scripts")
+os.rename(os.path.expandvars("%userprofile%") + "\\Documents\\Scripts\\statemachine-0.0.1", os.path.expandvars("%userprofile%") + "\\Documents\\Scripts\statemachine")
+```
+- execute the batchfile **conda-install.bat**
+- create a Windows Link and copy the following into "Speicherort":
+```
+%userprofile%\miniconda3\python.exe %userprofile%\miniconda3\cwp.py %userprofile%\miniconda3 %userprofile%\miniconda3\python.exe %userprofile%\miniconda3\Scripts\jupyter-lab-script.py "%USERPROFILE%/"
+```
+
+Double Click on the Link and enjoy :-)
+
