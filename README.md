@@ -1,28 +1,31 @@
-FSM using Python Coroutines
+FSM App
 
- - Divisibility by 3
- - SQL Parser
- - Regular Expression `ab*c`
+ - Myplant Finite State Machine
 
 # Setup
-## Install GraphViz
+## Install Miniconda
 
 ```
-brew install graphviz
+download & install https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe
+Search for 'miniconda' in Windows Start Menu and open 'Anaconda Prompt (miniconda3)'. 
+pin it to the taskbar
 ```
 
-## Install requirements
+## Install 
 
 ```
-pip -r requirements.txt
-pip install --install-option="--include-path=/usr/local/include/" --install-option="--library-path=/usr/local/lib/" pygraphviz
+download https://github.com/DieterChvatal/dmyplant4/archive/refs/tags/v0.0.4.zip
+download https://github.com/DieterChvatal/statemachine/archive/refs/tags/v0.0.1.zip
 ```
 
-## Exporting images from DOT
+Create %userprofile%\Scripts
+Create a file conda-install.bat in %userprofile%\Scripts
+
+copy the following content into this file: 
 
 ```
-dot -Tpng -Gsize=9,15\! -Gdpi=200 -oregex-1.png regex-1.dot
-dot -Tpng -Gsize=9,15\! -Gdpi=200 -odiv3.png div3.dot
-dot -Tpng -Gsize=9,15\! -Gdpi=200 -osql.png sql.dot
-dot -Tpng -Gsize=9,15\! -Gdpi=200 -otraffic-signal.png traffic-signal.dot
+hi
 ```
+
+open Anaconda Prompt and change to %userprofile%\Scripts
+execute conda-install.bat
