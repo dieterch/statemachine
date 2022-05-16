@@ -9,15 +9,12 @@ FSM App
 - Search for 'miniconda' in Windows Start Menu and open 'Anaconda Prompt (miniconda3)'. 
 - pin it to the taskbar
 
-## Install 
+## Install dMyplant4 & statemachine 
 
-```
-download https://github.com/DieterChvatal/dmyplant4/archive/refs/tags/v0.0.4.zip
-download https://github.com/DieterChvatal/statemachine/archive/refs/tags/v0.0.1.zip
-```
-
-Create %userprofile%\Scripts
-Create a file conda-install.bat in %userprofile%\Scripts
+- download https://github.com/DieterChvatal/dmyplant4/archive/refs/tags/v0.0.4.zip
+- download https://github.com/DieterChvatal/statemachine/archive/refs/tags/v0.0.1.zip
+- Create %userprofile%\Scripts
+- Create a file conda-install.bat in %userprofile%\Scripts
 
 copy the following content into this file: 
 
