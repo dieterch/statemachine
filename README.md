@@ -10,7 +10,7 @@ FSM App
 - pin it to the taskbar
 
 ## Install dMyplant4 & statemachine 
-- download https://github.com/DieterChvatal/dmyplant4/archive/refs/tags/v0.0.4.zip
+- download https://github.com/DieterChvatal/dmyplant4/archive/refs/tags/v0.0.3.zip
 - download https://github.com/DieterChvatal/statemachine/archive/refs/tags/v0.0.1.zip
 - Open 'Anaconda Prompt (miniconda3)'
 - Create Scripts Folder **mkdir %userprofile%\Documents\Scripts**
