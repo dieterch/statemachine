@@ -90,7 +90,14 @@ def overview_figure():
         {'col':['W','A','isuccess'],'_ylim':(-1,200), 'color':['rgba(255,165,0,0.3)','rgba(255,0,0,0.3)','rgba(0,128,0,0.2)'] },
         {'col':['no'],'_ylim':(0,1000), 'color':['rgba(0,0,0,0.1)'] },
         #{'col':['W','A','no'],'ylim':(-1,200), 'color':['rgba(255,165,0,0.3)','rgba(255,0,0,0.3)','rgba(0,0,0,0.1)'] }
-        ]
+        ],
+        'basic2': [
+        {'col':['targetload'],'ylim':(-4000,26000) },
+        {'col':['idle'],'ylim':(-100,1000), 'color':'dodgerblue' },
+        {'col':['W','A','isuccess'],'ylim':(-1,200), 'color':['rgba(255,165,0,0.3)','rgba(255,0,0,0.3)','rgba(0,128,0,0.2)'] },
+        {'col':['no'],'_ylim':(0,1000), 'color':['rgba(0,0,0,0.1)'] },
+        #{'col':['W','A','no'],'ylim':(-1,200), 'color':['rgba(255,165,0,0.3)','rgba(255,0,0,0.3)','rgba(0,0,0,0.1)'] }
+        ],        
     }
 
 #with open('/opt/notebooks/assets/Misterious_mist.gif', 'rb') as f:
@@ -128,7 +135,7 @@ def save_query_list(query_list):
 @dataclass
 class V:
     hh = '350px' # window height
-    dfigsize = (18,10)
+    dfigsize = (22,10)
     fleet = None
     e = None
     lfigures = myfigures()

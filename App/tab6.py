@@ -112,7 +112,7 @@ class Tab():
                         print(f'Error: {str(err)}')
                     ntitle = ftitle + ' | BMEP at Start vs TJ Gas Temperature in °C '
                     fig3 = dbokeh_chart(rde, dr2set2, x='TJ_GasTemp1_at_Min', style='circle', figsize=self.dfigsize ,title=ntitle);
-                    fig3.add_layout(Span(location=24.5,
+                    fig3.add_layout(Span(location=V.fsm._e.BMEP,
                             dimension='width',x_range_name='default', y_range_name='0',line_color='red', line_dash='dashed', line_alpha=0.6))
                     fig3.add_layout(Span(location=20.0,
                             dimension='width',x_range_name='default', y_range_name='1',line_color='blue', line_dash='dashed', line_alpha=0.6))

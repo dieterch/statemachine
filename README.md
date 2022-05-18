@@ -22,7 +22,7 @@ FSM App
 echo "Install FSM App via conda"
 echo "Dieter Chvatal    05/2022
 echo "========================="
-call conda install -k -y -c conda-forge "arrow==1.0.3" pandas matplotlib bokeh scipy IPython jupyterlab ipywidgets ipyfilechooser ipyregulartable voila pyarrow pytables nodejs
+call conda install -k -y -c conda-forge "arrow==1.0.3" pandas matplotlib bokeh scipy IPython jupyterlab ipywidgets ipyfilechooser ipyregulartable ipympl voila pyarrow pytables nodejs
 call python -m unzip.py
 cd statemachine
 jupyter trust App.ipynb
