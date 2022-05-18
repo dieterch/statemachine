@@ -9,9 +9,10 @@ FSM App
 - Search for 'miniconda' in Windows Start Menu and open 'Anaconda Prompt (miniconda3)'. 
 - pin it to the taskbar
 
-## Install dMyplant4 & statemachine 
-- download https://github.com/DieterChvatal/dmyplant4/archive/refs/tags/v0.0.3.zip
-- download https://github.com/DieterChvatal/statemachine/archive/refs/tags/v0.0.1.zip
+## Install dMyplant4 & statemachine
+- go to https://github.com/DieterChvatal
+- download dmyplant4-master.zip
+- download statemachine-master.zip
 - Open 'Anaconda Prompt (miniconda3)'
 - Create Scripts Folder **mkdir %userprofile%\Documents\Scripts**
 - Change to Scripts Folder **cd %userprofile%\Documents\Scripts**
@@ -22,7 +23,7 @@ FSM App
 echo "Install FSM App via conda"
 echo "Dieter Chvatal    05/2022
 echo "========================="
-call conda install -k -y -c conda-forge "arrow==1.0.3" pandas matplotlib bokeh scipy IPython jupyterlab ipywidgets ipyfilechooser ipyregulartable ipympl voila pyarrow pytables nodejs
+call conda install -k -y -c conda-forge "arrow==1.0.3" pandas matplotlib bokeh scipy IPython jupyterlab ipywidgets ipyfilechooser ipyregulartable ipympl voila pyarrow pytables nodejs git
 call python -m unzip.py
 cd statemachine
 jupyter trust App.ipynb
@@ -39,13 +40,13 @@ copy the following content into this file
 ```
 import zipfile, os
 
-with zipfile.ZipFile(os.path.expandvars("%userprofile%") + "\\Downloads\\dmyplant4-0.0.4.zip", 'r') as zip_ref:
+with zipfile.ZipFile(os.path.expandvars("%userprofile%") + "\\Downloads\\dmyplant4-master.zip", 'r') as zip_ref:
     zip_ref.extractall(os.path.expandvars("%userprofile%") + "\\Documents\\Scripts")
-os.rename(os.path.expandvars("%userprofile%") + "\\Documents\\Scripts\\dmyplant4-0.0.4", os.path.expandvars("%userprofile%") + "\\Documents\\Scripts\\dmyplant4")
+os.rename(os.path.expandvars("%userprofile%") + "\\Documents\\Scripts\\dmyplant4-master", os.path.expandvars("%userprofile%") + "\\Documents\\Scripts\\dmyplant4")
 
-with zipfile.ZipFile(os.path.expandvars("%userprofile%") + "\\Downloads\\statemachine-0.0.1.zip", 'r') as zip_ref:
+with zipfile.ZipFile(os.path.expandvars("%userprofile%") + "\\Downloads\\statemachine-master.zip", 'r') as zip_ref:
     zip_ref.extractall(os.path.expandvars("%userprofile%") + "\\Documents\\Scripts")
-os.rename(os.path.expandvars("%userprofile%") + "\\Documents\\Scripts\\statemachine-0.0.1", os.path.expandvars("%userprofile%") + "\\Documents\\Scripts\statemachine")
+os.rename(os.path.expandvars("%userprofile%") + "\\Documents\\Scripts\\statemachine-master", os.path.expandvars("%userprofile%") + "\\Documents\\Scripts\statemachine")
 ```
 - execute the batchfile **conda-install.bat**
 - create a Windows Link and copy the following into "Speicherort":

@@ -1,3 +1,3 @@
 echo off
-cd %userprofile%\\Scripts\\statemachine
+cd %USERPROFILE%/Scripts/statemachine
 jupyter lab
