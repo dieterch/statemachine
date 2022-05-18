@@ -42,4 +42,9 @@ echo "installation completed"
 %userprofile%\miniconda3\python.exe %userprofile%\miniconda3\cwp.py %userprofile%\miniconda3 %userprofile%\miniconda3\python.exe %userprofile%\miniconda3\Scripts\jupyter-lab-script.py "%USERPROFILE%/"
 ```
 
-Double Click on the Link and enjoy :-)
+Double Click on the Link
+- open statemachine/App.ipynb in Jupyter Lab
+- execute the first cell and enter your myplant credentials
+- then click on the "voila" button and select "simple" in the status line
+- please be patient at the first search, installed fleet data is downloaded in the background.
+ 
