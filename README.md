@@ -40,7 +40,7 @@ echo "installation completed"
 - execute the batchfile **conda-install.bat**
 - create a Windows Link and copy the following into "Speicherort":
 ```
-%userprofile%\miniconda3\python.exe %userprofile%\miniconda3\cwp.py %userprofile%\miniconda3\envs\FSM %userprofile%\miniconda3\envs\FSM\python.exe %userprofile%\miniconda3\envs\FSM\Scripts\jupyter-lab-script.py "%USERPROFILE%/Documents\Scripts"
+%userprofile%\miniconda3\pythonw.exe %userprofile%\miniconda3\cwp.py %userprofile%\miniconda3\envs\FSM %userprofile%\miniconda3\envs\FSM\pythonw.exe %userprofile%\miniconda3\envs\FSM\Scripts\jupyter-lab-script.py "%USERPROFILE%/Documents\Scripts"
 ```
 
 - open jupyter lab
