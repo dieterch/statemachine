@@ -21,8 +21,8 @@ echo "Install FSM App via conda"
 echo "Dieter Chvatal    05/2022
 echo "========================="
 SETLOCAL
-ENDLOCAL & conda create --name FSM -y
-ENDLOCAL & conda activate FSM
+ENDLOCAL & call conda create --name FSM -y
+ENDLOCAL & call conda activate FSM
 ENDLOCAL & call conda install --name FSM -k -y tqdm IPython
 ENDLOCAL & call conda install -k -y -c conda-forge "arrow==1.0.3" pandas matplotlib bokeh scipy jupyterlab ipywidgets ipyfilechooser ipyregulartable ipympl voila pyarrow pytables nodejs git
 git clone https://github.com/DieterChvatal/dmyplant4.git
