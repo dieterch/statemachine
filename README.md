@@ -40,7 +40,7 @@ echo "installation completed"
 - execute the batchfile **conda-install.bat**
 - create a Windows Link and copy the following into "Speicherort":
 ```
-%userprofile%\miniconda3\python.exe %userprofile%\miniconda3\cwp.py %userprofile%\miniconda3\envs\FSM %userprofile%\miniconda3\python.exe %userprofile%\miniconda3\Scripts\jupyter-lab-script.py "%USERPROFILE%/"
+%userprofile%\miniconda3\python.exe %userprofile%\miniconda3\cwp.py %userprofile%\miniconda3\envs\FSM %userprofile%\miniconda3\envs\FSM\python.exe %userprofile%\miniconda3\envs\FSM\Scripts\jupyter-lab-script.py "%USERPROFILE%/Documents\Scripts"
 ```
 
 - open jupyter lab
@@ -49,4 +49,6 @@ echo "installation completed"
 - execute the first cell and enter your myplant credentials
 - then click on the "voila" button and select "simple" in the status line
 - please be patient at the first search, installed fleet data is downloaded in the background.
+- alternatively go to localhost:8888/voila
+
  
