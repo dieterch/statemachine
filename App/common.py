@@ -30,7 +30,7 @@ def myfigures(e = None):
         {'col':['Aux_PreChambDifPress'],'_ylim': [0, 3], 'color':'purple', 'unit':'-'},
         {'col':['TecJet_Lambda1'],'ylim': [0, 3], 'color':'rgba(255,165,0,0.4)', 'unit':'-'},
         {'col':['Various_Values_PressBoost'],'_ylim': [0, 3], 'color':'dodgerblue', 'unit':'bar'},
-        {'col':['Various_Values_TempMixture'],'_ylim': [0, 3], 'color':'orange', 'unit':'°C'},
+        {'col':['Various_Values_TempMixture'],'ylim': [0, 200], 'color':'orange', 'unit':'°C'},
         {'col':['Various_Values_PosThrottle','Various_Values_PosTurboBypass'],'ylim': [-10, 110], 'color':['rgba(105,105,105,0.6)','rgba(165,42,42,0.4)'], 'unit':'%'},
         ],
         'tecjet' : [

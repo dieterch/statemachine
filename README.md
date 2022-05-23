@@ -10,9 +10,6 @@ FSM App
 - pin it to the taskbar
 
 ## Install dMyplant4 & statemachine
-- go to https://github.com/DieterChvatal
-- download dmyplant4-master.zip
-- download statemachine-master.zip
 - Open 'Anaconda Prompt (miniconda3)'
 - Create Scripts Folder **mkdir %userprofile%\Documents\Scripts**
 - Change to Scripts Folder **cd %userprofile%\Documents\Scripts**
@@ -23,7 +20,11 @@ FSM App
 echo "Install FSM App via conda"
 echo "Dieter Chvatal    05/2022
 echo "========================="
-call conda install -k -y -c conda-forge "arrow==1.0.3" pandas matplotlib bokeh scipy IPython jupyterlab ipywidgets ipyfilechooser ipyregulartable ipympl voila pyarrow pytables nodejs git
+SETLOCAL
+ENDLOCAL & call conda create --name FSM -y
+ENDLOCAL & call conda activate FSM
+ENDLOCAL & call conda install --name FSM -k -y tqdm IPython
+ENDLOCAL & call conda install -k -y -c conda-forge "arrow==1.0.3" pandas matplotlib bokeh scipy jupyterlab ipywidgets ipyfilechooser ipyregulartable ipympl voila pyarrow pytables nodejs git
 git clone https://github.com/DieterChvatal/dmyplant4.git
 git clone https://github.com/DieterChvatal/statemachine.git
 cd statemachine
@@ -39,12 +40,15 @@ echo "installation completed"
 - execute the batchfile **conda-install.bat**
 - create a Windows Link and copy the following into "Speicherort":
 ```
-%userprofile%\miniconda3\python.exe %userprofile%\miniconda3\cwp.py %userprofile%\miniconda3 %userprofile%\miniconda3\python.exe %userprofile%\miniconda3\Scripts\jupyter-lab-script.py "%USERPROFILE%/"
+%userprofile%\miniconda3\pythonw.exe %userprofile%\miniconda3\cwp.py %userprofile%\miniconda3\envs\FSM %userprofile%\miniconda3\envs\FSM\pythonw.exe %userprofile%\miniconda3\envs\FSM\Scripts\jupyter-lab-script.py "%USERPROFILE%/Documents\Scripts"
 ```
 
-Double Click on the Link
-- open statemachine/App.ipynb in Jupyter Lab
+- open jupyter lab
+- ok to Build - then wait some minutes until the message completed is visible - choose reload & restart
+- open statemachine/App.ipynb Jupyter Lab
 - execute the first cell and enter your myplant credentials
 - then click on the "voila" button and select "simple" in the status line
 - please be patient at the first search, installed fleet data is downloaded in the background.
+- alternatively go to localhost:8888/voila
+
  
