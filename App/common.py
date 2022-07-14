@@ -2,6 +2,7 @@ from dataclasses import dataclass
 import os, sys
 import pickle
 import pandas as pd; 
+import math
 pd.options.mode.chained_assignment = None
 pd.set_option("display.precision", 2)
 import ipywidgets as widgets
@@ -18,12 +19,15 @@ except Exception as err:
 
 # DEFINITION OF PLOTS & OVERVIEW
 def myfigures(e = None):
-    def fake_e(dataItem):
+    def fake_cyl(dataItem):
         return [dataItem[:-1] + '01']
-    func = fake_e if e is None else e.dataItemsCyl
+    func_cyl = fake_cyl if e is None else e.dataItemsCyl
+    def fake_power():
+        return 5000
+    func_power = fake_power if e is None else math.ceil(e['Power_PowerNominal'] / 1000.0) * 1000.0 * 1.2
     return {
         'actors' : [
-        {'col':['Power_SetPower','Power_PowerAct'], 'ylim':(0,5000), 'color':['lightblue','red'], 'unit':'kW'},
+        {'col':['Power_SetPower','Power_PowerAct'], 'ylim':(0,func_power), 'color':['lightblue','red'], 'unit':'kW'},
         {'col':['Various_Values_SpeedAct'],'ylim': [0, 2500], 'color':'blue', 'unit':'rpm'},
         {'col':['Ignition_ITPAvg'],'ylim': [-10, 30], 'color':'rgba(255,0,255,0.4)', 'unit':'°KW'},
         {'col':['TecJet_Lambda1'],'ylim': [0, 3], 'color':'rgba(255,165,0,0.4)', 'unit':'-'},
@@ -34,7 +38,7 @@ def myfigures(e = None):
         {'col':['Various_Values_PosThrottle','Various_Values_PosTurboBypass'],'ylim': [-10, 110], 'color':['rgba(105,105,105,0.6)','rgba(165,42,42,0.4)'], 'unit':'%'},
         ],
         'tecjet' : [
-        {'col':['Power_SetPower','Power_PowerAct'], 'ylim':(0,5000), 'color':['lightblue','red'], 'unit':'kW'},
+        {'col':['Power_SetPower','Power_PowerAct'], 'ylim':(0,func_power), 'color':['lightblue','red'], 'unit':'kW'},
         {'col':['bmep'], 'ylim':(-10,40), 'color':'orange', 'unit':'bar'},
         {'col':['Various_Values_SpeedAct'],'ylim': [0, 2500], 'color':'blue', 'unit':'rpm'},
         {'col':['Ignition_ITPAvg'],'ylim': [-10, 30], 'color':'limegreen', 'unit':'°KW'},
@@ -45,33 +49,40 @@ def myfigures(e = None):
         {'col':['TecJet_ValvePos1'],'ylim': [0, 200], 'color':'purple', 'unit':'%'},
         ],
         'lubrication' : [
-        {'col':['Power_SetPower','Power_PowerAct'], 'ylim':(0,5000), 'color':['lightblue','red'], 'unit':'kW'},
+        {'col':['Power_SetPower','Power_PowerAct'], 'ylim':(0,func_power), 'color':['lightblue','red'], 'unit':'kW'},
         {'col':['Various_Values_SpeedAct'],'ylim': [0, 2500], 'color':'blue', 'unit':'rpm'},
         {'col':['Hyd_PressCrankCase'],'ylim': [-100, 100], 'color':'orange', 'unit':'mbar'},
         {'col':['Hyd_PressOilDif'],'ylim': [0, 3], 'color':'black', 'unit': 'bar'},
         {'col':['Hyd_PressOil'],'ylim': [0, 10], 'color':'brown', 'unit': 'bar'},
+        {'col':['TecJet_Lambda1'],'ylim': [0, 3], 'color':'rgba(255,165,0,0.4)', 'unit':'-'},
         {'col':['Hyd_TempOil','Hyd_TempCoolWat','Hyd_TempWatRetCoolOut'],'ylim': [0, 110], 'color':['#2171b5','orangered','hotpink'], 'unit':'°C'},
         ],
         'exhaust' : [
-        {'col':['Power_SetPower','Power_PowerAct'], 'ylim':(0,5000), 'color':['lightblue','red'], 'unit':'kW'},
+        {'col':['Power_SetPower','Power_PowerAct'], 'ylim':(0,func_power), 'color':['lightblue','red'], 'unit':'kW'},
         {'col':['Various_Values_SpeedAct'],'ylim': [0, 2500], 'color':'blue', 'unit':'rpm'},
         {'col':['TecJet_Lambda1'],'ylim': [0, 3], 'color':'rgba(255,165,0,0.4)', 'unit':'-'},
-        {'col':func('Exhaust_TempCyl*'),'ylim': [400, 700], 'unit':'°C'},
+        {'col':func_cyl('Exhaust_TempCyl*'),'ylim': [300, 700], 'unit':'°C'},
+        ],
+        'exhaust2' : [
+        {'col':['Power_SetPower','Power_PowerAct'], 'ylim':(0,func_power), 'color':['lightblue','red'], 'unit':'kW'},
+        {'col':['Various_Values_SpeedAct'],'ylim': [0, 2500], 'color':'blue', 'unit':'rpm'},
+        {'col':['TecJet_Lambda1'],'ylim': [0, 3], 'color':'rgba(255,165,0,0.4)', 'unit':'-'},
+        {'col':func_cyl('Exhaust_TempCyl*'),'ylim': [0, 700], 'unit':'°C'},
         ],
         'valvenoise' : [
-        {'col':['Power_SetPower','Power_PowerAct'], 'ylim':(0,5000), 'color':['lightblue','red'], 'unit':'kW'},
+        {'col':['Power_SetPower','Power_PowerAct'], 'ylim':(0,func_power), 'color':['lightblue','red'], 'unit':'kW'},
         {'col':['Various_Values_SpeedAct'],'ylim': [0, 2500], 'color':'blue', 'unit':'rpm'},
         {'col':['TecJet_Lambda1'],'ylim': [0, 3], 'color':'rgba(255,165,0,0.4)', 'unit':'-'},
-        {'col':func('Knock_Valve_Noise_Cyl*'),'ylim': [0, 12000], 'unit':'mV'},
+        {'col':func_cyl('Knock_Valve_Noise_Cyl*'),'ylim': [0, 12000], 'unit':'mV'},
         ],
 
         'ignition' : [
-        {'col':['Power_SetPower','Power_PowerAct'], 'ylim':(0,5000), 'color':['lightblue','red'], 'unit':'kW'},
+        {'col':['Power_SetPower','Power_PowerAct'], 'ylim':(0,func_power), 'color':['lightblue','red'], 'unit':'kW'},
         {'col':['Various_Values_SpeedAct'],'ylim': [0, 2500], 'color':'blue', 'unit':'rpm'},
         {'col':['TecJet_Lambda1'],'ylim': [0, 3], 'color':'rgba(255,165,0,0.4)', 'unit':'-'},
-        {'col':func('Monic_VoltCyl*'),'ylim': [0, 100], 'unit':'kV'},
-        {'col':func('Ignition_ITPCyl*'),'ylim': [0, 40], 'unit':'°KW'},
-        {'col':func('Knock_KLS98_IntKnock_Cyl*'),'ylim': [-80, 10], 'unit':'%'},
+        {'col':func_cyl('Monic_VoltCyl*'),'ylim': [0, 100], 'unit':'kV'},
+        {'col':func_cyl('Ignition_ITPCyl*'),'ylim': [0, 40], 'unit':'°KW'},
+        {'col':func_cyl('Knock_KLS98_IntKnock_Cyl*'),'ylim': [-80, 10], 'unit':'%'},
         ],    
     }
 
@@ -135,7 +146,8 @@ def save_query_list(query_list):
 @dataclass
 class V:
     hh = '350px' # window height
-    dfigsize = (22,10)
+    dfigsize = (18,8)
+    dfigsize_big = (20,8)
     fleet = None
     e = None
     lfigures = myfigures()

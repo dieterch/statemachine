@@ -104,6 +104,13 @@ class Tab():
             indent=False,
             layout=widgets.Layout(width='100px'))
 
+        self.plotsize_chkbox = widgets.Checkbox(
+            value=False,
+            description='Big Plot Size',
+            disabled=False,
+            indent=False,
+            layout=widgets.Layout(width='100px'))
+        
         #self.start_table = widgets.HTML()
         self.start_table = widgets.Output(
              layout=widgets.Layout(height='100px')
@@ -137,7 +144,7 @@ class Tab():
                         ]),
                         self.plot_selection,
                         VBox([
-                            HBox([self.par_data_chkbox, self.alarms_chkbox, self.annotations_chkbox]),
+                            HBox([self.par_data_chkbox, self.alarms_chkbox, self.annotations_chkbox, self.plotsize_chkbox]),
                             HBox([self.refresh_chkbox, self.warnings_chkbox, self.stateslines_chkbox])
                         ])
                     ]),
@@ -190,6 +197,10 @@ class Tab():
             # PLotter
             ftitle = f"{fsm._e} ----- Start {startversuch['no']} {startversuch['mode']} | {startversuch['success']} | {startversuch['starttime'].round('S')}"
             fig_handles = []
+            if self.plotsize_chkbox.value:
+                self.pfigsize = V.dfigsize_big
+            else:
+                self.pfigsize = V.dfigsize                
             for doplot in plotselection:
 
                 res2_dict = {
