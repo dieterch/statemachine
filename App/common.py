@@ -24,7 +24,7 @@ def myfigures(e = None):
     func_cyl = fake_cyl if e is None else e.dataItemsCyl
     def fake_power():
         return 5000
-    func_power = fake_power if e is None else math.ceil(e['Power_PowerNominal'] / 1000.0) * 1000.0
+    func_power = fake_power if e is None else math.ceil(e['Power_PowerNominal'] / 1000.0) * 1000.0 * 1.2
     return {
         'actors' : [
         {'col':['Power_SetPower','Power_PowerAct'], 'ylim':(0,func_power), 'color':['lightblue','red'], 'unit':'kW'},
@@ -146,7 +146,8 @@ def save_query_list(query_list):
 @dataclass
 class V:
     hh = '350px' # window height
-    dfigsize = (22,10)
+    dfigsize = (18,8)
+    dfigsize_big = (20,8)
     fleet = None
     e = None
     lfigures = myfigures()
