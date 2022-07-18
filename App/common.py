@@ -55,7 +55,7 @@ def myfigures(e = None):
         {'col':['Hyd_PressOilDif'],'ylim': [0, 3], 'color':'black', 'unit': 'bar'},
         {'col':['Hyd_PressOil'],'ylim': [0, 10], 'color':'brown', 'unit': 'bar'},
         {'col':['TecJet_Lambda1'],'ylim': [0, 3], 'color':'rgba(255,165,0,0.4)', 'unit':'-'},
-        {'col':['Hyd_TempOil','Hyd_TempCoolWat','Hyd_TempWatRetCoolOut'],'ylim': [0, 110], 'color':['#2171b5','orangered','hotpink'], 'unit':'°C'},
+        {'col':['Hyd_TempOil','Hyd_TempCoolWat','Hyd_TempWatRetPreEng'],'ylim': [0, 110], 'color':['#2171b5','orangered','hotpink'], 'unit':'°C'},
         ],
         'exhaust' : [
         {'col':['Power_SetPower','Power_PowerAct'], 'ylim':(0,func_power), 'color':['lightblue','red'], 'unit':'kW'},
@@ -75,15 +75,25 @@ def myfigures(e = None):
         {'col':['TecJet_Lambda1'],'ylim': [0, 3], 'color':'rgba(255,165,0,0.4)', 'unit':'-'},
         {'col':func_cyl('Knock_Valve_Noise_Cyl*'),'ylim': [0, 12000], 'unit':'mV'},
         ],
-
-        'ignition' : [
+        'knocking' : [
+        {'col':['Power_SetPower','Power_PowerAct'], 'ylim':(0,func_power), 'color':['lightblue','red'], 'unit':'kW'},
+        {'col':['Various_Values_SpeedAct'],'ylim': [0, 2500], 'color':'blue', 'unit':'rpm'},
+        {'col':['TecJet_Lambda1'],'ylim': [0, 3], 'color':'rgba(255,165,0,0.4)', 'unit':'-'},
+        {'col':func_cyl('Knock_KLS98_Knock_Cyl*'),'_ylim': [-80, 10], 'unit':'mv'},
+        {'col':func_cyl('Knock_KLS98_IntKnock_Cyl*'),'ylim': [-80, 10], 'unit':'%'},
+        ],
+        'ignition1' : [
         {'col':['Power_SetPower','Power_PowerAct'], 'ylim':(0,func_power), 'color':['lightblue','red'], 'unit':'kW'},
         {'col':['Various_Values_SpeedAct'],'ylim': [0, 2500], 'color':'blue', 'unit':'rpm'},
         {'col':['TecJet_Lambda1'],'ylim': [0, 3], 'color':'rgba(255,165,0,0.4)', 'unit':'-'},
         {'col':func_cyl('Monic_VoltCyl*'),'ylim': [0, 100], 'unit':'kV'},
+        ],
+        'ignition2' : [
+        {'col':['Power_SetPower','Power_PowerAct'], 'ylim':(0,func_power), 'color':['lightblue','red'], 'unit':'kW'},
+        {'col':['Various_Values_SpeedAct'],'ylim': [0, 2500], 'color':'blue', 'unit':'rpm'},
+        {'col':['TecJet_Lambda1'],'ylim': [0, 3], 'color':'rgba(255,165,0,0.4)', 'unit':'-'},
         {'col':func_cyl('Ignition_ITPCyl*'),'ylim': [0, 40], 'unit':'°KW'},
-        {'col':func_cyl('Knock_KLS98_IntKnock_Cyl*'),'ylim': [-80, 10], 'unit':'%'},
-        ],    
+        ],   
     }
 
 def overview_figure():
