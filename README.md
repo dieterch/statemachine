@@ -42,7 +42,15 @@ echo "installation completed"
 ```
 %userprofile%\miniconda3\pythonw.exe %userprofile%\miniconda3\cwp.py %userprofile%\miniconda3\envs\FSM %userprofile%\miniconda3\envs\FSM\pythonw.exe %userprofile%\miniconda3\envs\FSM\Scripts\jupyter-lab-script.py "%USERPROFILE%/Documents\Scripts"
 ```
-
+- alternatively create a batchfile "go.bat" in your %USERPROFILE% folder:
+```
+@echo off
+@echo ==============================================
+@echo Statemachine (c) Dieter.Chvatal@innio.com 2022
+@echo ==============================================
+cd "%USERPROFILE%/Documents\Scripts\statemachine"
+jupyter lab
+```
 - open jupyter lab
 - ok to Build - then wait some minutes until the message completed is visible - choose reload & restart
 - open statemachine/App.ipynb Jupyter Lab
