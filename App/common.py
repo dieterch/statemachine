@@ -79,7 +79,7 @@ def myfigures(e = None):
         {'col':['Power_SetPower','Power_PowerAct'], 'ylim':(0,func_power), 'color':['lightblue','red'], 'unit':'kW'},
         {'col':['Various_Values_SpeedAct'],'ylim': [0, 2500], 'color':'blue', 'unit':'rpm'},
         {'col':['TecJet_Lambda1'],'ylim': [0, 3], 'color':'rgba(255,165,0,0.4)', 'unit':'-'},
-        {'col':func_cyl('Knock_KLS98_Knock_Cyl*'),'_ylim': [-80, 10], 'unit':'mv'},
+        {'col':func_cyl('Knock_KLS98_Knock_Cyl*'),'ylim': [0, 1000], 'unit':'mv'},
         {'col':func_cyl('Knock_KLS98_IntKnock_Cyl*'),'ylim': [-80, 10], 'unit':'%'},
         ],
         'ignition1' : [
