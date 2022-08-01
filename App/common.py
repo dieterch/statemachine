@@ -99,24 +99,25 @@ def myfigures(e = None):
 def overview_figure():
     return {
         'basic': [
-        {'col':['cumstarttime'],'_ylim':(-600,800), 'color':'darkblue'},
-        {'col':['runout'],'_ylim':(0,100) },
-        {'col':['targetload'],'_ylim':(-4000,26000) },
-        {'col':['ramprate'],'_ylim':(-5,7)},
-        {'col':['loadramp'],'_ylim':(-150,900), 'color':'red'},
-        {'col':['speedup'],'_ylim':(-100,200), 'color':'orange'},
-        {'col':['synchronize'],'_ylim':(-20,400)},
-        {'col':['oilfilling'],'_ylim':(-1000,800)},
-        {'col':['degasing'],'_ylim':(-1000,800)},
-        {'col':['W','A','isuccess'],'_ylim':(-1,200), 'color':['rgba(255,165,0,0.3)','rgba(255,0,0,0.3)','rgba(0,128,0,0.2)'] },
-        {'col':['no'],'_ylim':(0,1000), 'color':['rgba(0,0,0,0.1)'] },
+        {'col':['cumstarttime'],'_ylim':(-600,800), 'color':'darkblue', 'unit':'sec' },
+        {'col':['runout'],'_ylim':(0,100) , 'unit':'sec' },
+        {'col':['targetload'],'_ylim':(-4000,26000) , 'unit':'kW' },
+        {'col':['ramprate'],'_ylim':(-5,7), 'unit':'-' },
+        {'col':['loadramp'],'_ylim':(-150,900), 'color':'red', 'unit':'sec' },
+        {'col':['speedup'],'_ylim':(-100,200), 'color':'orange', 'unit':'sec' },
+        {'col':['synchronize'],'_ylim':(-20,400), 'unit':'sec' },
+        {'col':['oilfilling'],'_ylim':(-1000,800), 'unit':'sec' },
+        {'col':['degasing'],'_ylim':(-1000,800), 'unit':'sec' },
+        {'col':['W','A','isuccess'],'_ylim':(-1,200), 'color':['rgba(255,165,0,0.3)','rgba(255,0,0,0.3)','rgba(0,128,0,0.2)'] , 'unit':'-' },
+        {'col':['no'],'_ylim':(0,1000), 'color':['rgba(0,0,0,0.1)'] , 'unit':'-' },
         #{'col':['W','A','no'],'ylim':(-1,200), 'color':['rgba(255,165,0,0.3)','rgba(255,0,0,0.3)','rgba(0,0,0,0.1)'] }
         ],
         'basic2': [
-        {'col':['targetload'],'ylim':(-4000,26000) },
-        {'col':['idle'],'ylim':(-100,1000), 'color':'dodgerblue' },
-        {'col':['W','A','isuccess'],'ylim':(-1,200), 'color':['rgba(255,165,0,0.3)','rgba(255,0,0,0.3)','rgba(0,128,0,0.2)'] },
-        {'col':['no'],'_ylim':(0,1000), 'color':['rgba(0,0,0,0.1)'] },
+        {'col':['targetload'],'ylim':(-4000,26000), 'unit':'kW' },
+        {'col':['idle'],'ylim':(-100,1000), 'color':'dodgerblue', 'unit':'sec' },
+        {'col':['PCDifPress_min'],'ylim':(-2500,-500), 'color':'red', 'unit':'mbar' },
+        {'col':['W','A','isuccess'],'ylim':(-1,200), 'color':['rgba(255,165,0,0.3)','rgba(255,0,0,0.3)','rgba(0,128,0,0.2)'] , 'unit':'-' },
+        {'col':['no'],'_ylim':(0,1000), 'color':['rgba(0,0,0,0.1)'] , 'unit':'-' },
         #{'col':['W','A','no'],'ylim':(-1,200), 'color':['rgba(255,165,0,0.3)','rgba(255,0,0,0.3)','rgba(0,0,0,0.1)'] }
         ],        
     }
