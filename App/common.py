@@ -115,7 +115,7 @@ def overview_figure():
         'basic2': [
         {'col':['targetload'],'ylim':(-4000,26000), 'unit':'kW' },
         {'col':['idle'],'ylim':(-100,1000), 'color':'dodgerblue', 'unit':'sec' },
-        {'col':['PCDifPress_min'],'ylim':(-2500,-500), 'color':'red', 'unit':'mbar' },
+        {'col':['PCDifPress_min'],'ylim':(-3000,0), 'color':'red', 'unit':'mbar' },
         {'col':['W','A','isuccess'],'ylim':(-1,200), 'color':['rgba(255,165,0,0.3)','rgba(255,0,0,0.3)','rgba(0,128,0,0.2)'] , 'unit':'-' },
         {'col':['no'],'_ylim':(0,1000), 'color':['rgba(0,0,0,0.1)'] , 'unit':'-' },
         #{'col':['W','A','no'],'ylim':(-1,200), 'color':['rgba(255,165,0,0.3)','rgba(255,0,0,0.3)','rgba(0,0,0,0.1)'] }
