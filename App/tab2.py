@@ -221,7 +221,8 @@ class Tab():
                         print()
                         print('unsucessful run2 data:')
                         print('---------------------------------')
-                        display(pd.DataFrame(V.fsm.results['run2_failed'])[V.fsm.startstopHandler.run2filter_content].style.hide())
+                        #display(pd.DataFrame(V.fsm.results['run2_failed'])[V.fsm.startstopHandler.run2filter_content].style.hide())
+                        display(pd.DataFrame(V.fsm.results['run2_failed'])[V.fsm.results['run2_content']['startstop']].style.hide())
 
     def fsm_run0(self,b):
         #motor = V.fleet.iloc[int(V.selected_number)]
