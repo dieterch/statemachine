@@ -153,9 +153,9 @@ class Tab():
                     #dset2 = equal_adjust(dset2, self.rde, do_not_adjust=[-1])
                     ftitle = f"{V.fsm._e}"
                     try:
-                        fig = dbokeh_chart(self.rde, dset2, style='both', figsize=V.dfigsize ,title=ftitle);
+                        fig2 = dbokeh_chart(self.rde, dset2, style='both', figsize=V.dfigsize ,title=ftitle);
                         print()
-                        bokeh_show(fig)
+                        bokeh_show(fig2)
                     except Exception as err:
                         print('\n','no figure to display, Error: ', str(err))
                         

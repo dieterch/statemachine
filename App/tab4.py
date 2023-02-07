@@ -45,7 +45,7 @@ class Tab():
             disabled=False, 
             button_style='primary')
         self.b_plots.on_click(self.show_plots)
-
+        
         # self.b_run2 = widgets.Button(
         #     description='FSM 2',
         #     disabled=False, 
@@ -110,7 +110,14 @@ class Tab():
             disabled=False,
             indent=False,
             layout=widgets.Layout(width='100px'))
-        
+
+        self.export_chkbox = widgets.Checkbox(
+            value=False,
+            description='Export Tables',
+            disabled=False,
+            indent=False,
+            layout=widgets.Layout(width='100px'))
+
         #self.start_table = widgets.HTML()
         self.start_table = widgets.Output(
              layout=widgets.Layout(height='100px')
@@ -145,7 +152,7 @@ class Tab():
                         self.plot_selection,
                         VBox([
                             HBox([self.par_data_chkbox, self.alarms_chkbox, self.annotations_chkbox, self.plotsize_chkbox]),
-                            HBox([self.refresh_chkbox, self.warnings_chkbox, self.stateslines_chkbox])
+                            HBox([self.refresh_chkbox, self.warnings_chkbox, self.stateslines_chkbox, self.export_chkbox])
                         ])
                     ]),
                     self.start_table,
@@ -218,6 +225,14 @@ class Tab():
                 else:
                     fig = FSM_splot(fsm, startversuch, data, dset, title=ltitle, figsize=self.pfigsize)
 
+                if self.export_chkbox.value:
+                    ndata = data[['time','Various_Values_SpeedAct']]
+                    fn = V.e._fname + '_' + doplot +'_export.xls'
+                    fn2 = V.e._fname + '_all_' + doplot +'_export.xls'
+                    print(f'saving messages to {fn}')
+                    ndata.to_excel(fn)
+                    data.to_excel(fn2)
+
                 if self.annotations_chkbox.value:
                     fig = FSM_add_Notations(fig, fsm, startversuch)
                 if self.stateslines_chkbox.value:
@@ -256,6 +271,7 @@ class Tab():
             self.update_fig(x=self.sno.value, lfigures=V.lfigures, plotselection=self.plot_selection.value, 
                             vset=V.vset, plot_range=self.time_range.value, fsm=V.fsm)
 
+            
     def html_table(self, result_list):
             table = pd.DataFrame(result_list).T
             return table.style.set_table_styles([
