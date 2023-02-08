@@ -13,43 +13,50 @@ FSM App
 - Open 'Anaconda Prompt (miniconda3)'
 - Create Scripts Folder **mkdir %userprofile%\Documents\Scripts**
 - Change to Scripts Folder **cd %userprofile%\Documents\Scripts**
-- Create a batchfile **notepad conda-install.bat**
-- copy the following content into this file: 
-```
-@echo off
-echo "Install FSM App via conda"
-echo "Dieter Chvatal    05/2022
-echo "========================="
-SETLOCAL
-ENDLOCAL & call conda create --name FSM -y
-ENDLOCAL & call conda activate FSM
-ENDLOCAL & call conda install --name FSM -k -y tqdm IPython
-ENDLOCAL & call conda install -k -y -c conda-forge "arrow==1.0.3" pandas matplotlib bokeh scipy jupyterlab ipywidgets ipyfilechooser ipyregulartable ipympl voila pyarrow pytables nodejs git
+- conda create --name FSM -y
+- conda activate FSM
+- conda install -k -c conda-forge IPython
+.... install the following packages like before
+arrow 
+tqdm 
+pandas 
+matplotlib 
+bokeh 
+scipy 
+jupyterlab 
+ipywidgets 
+ipyfilechooser 
+ipyregulartable 
+ipympl 
+voila 
+pyarrow 
+pytables 
+nodejs 
+git
+
+## then download the following git's
 git clone https://github.com/DieterChvatal/dmyplant4.git
 git clone https://github.com/DieterChvatal/statemachine.git
+
 cd statemachine
 jupyter trust App.ipynb
 cd ..
 cd dmyplant4
 REM python setup.py develop --uninstall
 python setup.py develop
-cd ..
-echo "======================"
-echo "installation completed"
-```
-- execute the batchfile **conda-install.bat**
-- create a Windows Link and copy the following into "Speicherort":
-```
-%userprofile%\miniconda3\pythonw.exe %userprofile%\miniconda3\cwp.py %userprofile%\miniconda3\envs\FSM %userprofile%\miniconda3\envs\FSM\pythonw.exe %userprofile%\miniconda3\envs\FSM\Scripts\jupyter-lab-script.py "%USERPROFILE%/Documents\Scripts"
-```
-- alternatively create a batchfile "go.bat" in your %USERPROFILE% folder:
+# you might see several "package missing  errors, just keep installing until this commanf runs through
+
+- create a batchfile "go.bat" in your %USERPROFILE% folder:
 ```
 @echo off
 @echo ==============================================
 @echo Statemachine (c) Dieter.Chvatal@innio.com 2022
 @echo ==============================================
 cd "%USERPROFILE%/Documents\Scripts\statemachine"
+SETLOCAL
+call conda activate FSM
 jupyter lab
+ENDLOCAL
 ```
 - open jupyter lab
 - ok to Build - then wait some minutes until the message completed is visible - choose reload & restart
