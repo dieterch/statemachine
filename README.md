@@ -219,6 +219,7 @@ zlib=1.2.13=h8cc25b3_0
 zstd=1.5.2=h19a0ad4_0
 ```
 - conda create --name FSM -y -k -c conda-forge --file statemachine.txt
+- conda activate FSM
 
 ## then download the following git's
 git clone https://github.com/DieterChvatal/dmyplant4.git
