@@ -47,11 +47,11 @@ cd statemachine
 jupyter trust App.ipynb
 cd ..
 cd dmyplant4
-# if you need to update or reinstall myplant4 run the following command
+## if you need to update or reinstall myplant4 run the following command
 python setup.py develop --uninstall
-# make the dmyplant package visible:
+## make the dmyplant package visible:
 python setup.py develop
-# you might see several "package missing  errors, just keep installing until this commanf runs through
+## you might see several "package missing  errors, just keep installing until this commanf runs through
 
 - open jupyter lab
 - ok to Build - then wait some minutes until the message completed is visible - choose reload & restart
