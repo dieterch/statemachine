@@ -19,7 +19,7 @@ FSM App
 
 - conda create --name FSM -y
 - conda activate FSM
-- conda install python
+- conda install -k python
 - conda install -k -c conda-forge IPython
 
 .... install the following packages like before
