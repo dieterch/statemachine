@@ -4,53 +4,55 @@ FSM App
 
 # Setup
 ## Install Miniconda
-
 - download & install https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe
 - Search for 'miniconda' in Windows Start Menu and open 'Anaconda Prompt (miniconda3)'. 
 - pin it to the taskbar
 
 ## Install dMyplant4 & statemachine
 - Open 'Anaconda Prompt (miniconda3)'
+
+## Update conda to the latest version
+- run conda update conda
+
 - Create Scripts Folder **mkdir %userprofile%\Documents\Scripts**
 - Change to Scripts Folder **cd %userprofile%\Documents\Scripts**
-- Create a batchfile **notepad conda-install.bat**
-- copy the following content into this file: 
-```
-@echo off
-echo "Install FSM App via conda"
-echo "Dieter Chvatal    05/2022
-echo "========================="
-SETLOCAL
-ENDLOCAL & call conda create --name FSM -y
-ENDLOCAL & call conda activate FSM
-ENDLOCAL & call conda install --name FSM -k -y tqdm IPython
-ENDLOCAL & call conda install -k -y -c conda-forge "arrow==1.0.3" pandas matplotlib bokeh scipy jupyterlab ipywidgets ipyfilechooser ipyregulartable ipympl voila pyarrow pytables nodejs git
+
+- conda create --name FSM -y
+- conda activate FSM
+- conda install -k -c conda-forge IPython
+
+.... install the following packages like before
+arrow 
+tqdm 
+pandas 
+matplotlib 
+bokeh 
+scipy 
+jupyterlab 
+ipywidgets 
+ipyfilechooser 
+ipyregulartable 
+ipympl 
+voila 
+pyarrow 
+pytables 
+nodejs 
+git
+
+## then download the following git's
 git clone https://github.com/DieterChvatal/dmyplant4.git
 git clone https://github.com/DieterChvatal/statemachine.git
+
 cd statemachine
 jupyter trust App.ipynb
 cd ..
 cd dmyplant4
-REM python setup.py develop --uninstall
+## if you need to update or reinstall myplant4 run the following command
+python setup.py develop --uninstall
+## make the dmyplant package visible:
 python setup.py develop
-cd ..
-echo "======================"
-echo "installation completed"
-```
-- execute the batchfile **conda-install.bat**
-- create a Windows Link and copy the following into "Speicherort":
-```
-%userprofile%\miniconda3\pythonw.exe %userprofile%\miniconda3\cwp.py %userprofile%\miniconda3\envs\FSM %userprofile%\miniconda3\envs\FSM\pythonw.exe %userprofile%\miniconda3\envs\FSM\Scripts\jupyter-lab-script.py "%USERPROFILE%/Documents\Scripts"
-```
-- alternatively create a batchfile "go.bat" in your %USERPROFILE% folder:
-```
-@echo off
-@echo ==============================================
-@echo Statemachine (c) Dieter.Chvatal@innio.com 2022
-@echo ==============================================
-cd "%USERPROFILE%/Documents\Scripts\statemachine"
-jupyter lab
-```
+## you might see several "package missing  errors, just keep installing until this commanf runs through
+
 - open jupyter lab
 - ok to Build - then wait some minutes until the message completed is visible - choose reload & restart
 - open statemachine/App.ipynb Jupyter Lab
@@ -59,4 +61,16 @@ jupyter lab
 - please be patient at the first search, installed fleet data is downloaded in the background.
 - alternatively go to localhost:8888/voila
 
- 
+- create a batchfile "go.bat" in your %USERPROFILE% folder:
+```
+@echo off
+@echo ==============================================
+@echo Statemachine (c) Dieter.Chvatal@innio.com 2022
+@echo ==============================================
+cd "%USERPROFILE%/Documents\Scripts\statemachine"
+SETLOCAL
+call conda activate FSM
+jupyter lab
+ENDLOCAL
+```
+## to start statemachine open an anaconda prompt and run "go" 
