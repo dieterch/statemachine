@@ -218,33 +218,7 @@ zipp=3.13.0=pyhd8ed1ab_0
 zlib=1.2.13=h8cc25b3_0
 zstd=1.5.2=h19a0ad4_0
 ```
-
-
 - conda create --name FSM -y -k -c conda-forge --file statemachine.txt
-
-
-- conda create --name FSM -y
-- conda activate FSM
-- conda install -k python
-- conda install -k -c conda-forge IPython
-
-.... install the following packages like before
-- conda install -k -c conda-forge arrow 
-- .. tqdm 
-- .. pandas 
-- .. matplotlib 
-- .. bokeh=2.4.* 
-- .. scipy 
-- .. jupyterlab 
-- .. ipywidgets 
-- .. ipyfilechooser 
-- .. ipyregulartable 
-- .. ipympl 
-- .. voila 
-- .. pyarrow 
-- .. pytables 
-- .. nodejs 
-- .. git
 
 ## then download the following git's
 git clone https://github.com/DieterChvatal/dmyplant4.git
