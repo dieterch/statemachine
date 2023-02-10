@@ -222,13 +222,14 @@ zstd=1.5.2=h19a0ad4_0
 - conda activate FSM
 
 ## then download the following git's
-git clone https://github.com/DieterChvatal/dmyplant4.git
-git clone https://github.com/DieterChvatal/statemachine.git
+- git clone https://github.com/DieterChvatal/dmyplant4.git
+- git clone https://github.com/DieterChvatal/statemachine.git
 
-cd statemachine
-jupyter trust App.ipynb
-cd ..
-cd dmyplant4
+- cd statemachine
+- jupyter trust App.ipynb
+- cd ..
+- cd dmyplant4
+- 
 ## install the package in its place ...
 - python setup.py develop --uninstall
 - python setup.py develop
