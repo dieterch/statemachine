@@ -229,9 +229,8 @@ cd statemachine
 jupyter trust App.ipynb
 cd ..
 cd dmyplant4
-## if you need to update or reinstall myplant4 run the following command
+## install the package in its place ...
 python setup.py develop --uninstall
-## make the dmyplant package visible:
 python setup.py develop
 ## you might see several "package missing  errors, just keep installing until this commanf runs through
 
