@@ -23,22 +23,22 @@ FSM App
 - conda install -k -c conda-forge IPython
 
 .... install the following packages like before
-arrow 
-tqdm 
-pandas 
-matplotlib 
-bokeh 
-scipy 
-jupyterlab 
-ipywidgets 
-ipyfilechooser 
-ipyregulartable 
-ipympl 
-voila 
-pyarrow 
-pytables 
-nodejs 
-git
+- conda install -k -c conda-forge arrow 
+- .. tqdm 
+- .. pandas 
+- .. matplotlib 
+- .. "bokeh==2.4" 
+- .. scipy 
+- .. jupyterlab 
+- .. ipywidgets 
+- .. ipyfilechooser 
+- .. ipyregulartable 
+- .. ipympl 
+- .. voila 
+- .. pyarrow 
+- .. pytables 
+- .. nodejs 
+- .. git
 
 ## then download the following git's
 git clone https://github.com/DieterChvatal/dmyplant4.git
