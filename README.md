@@ -73,4 +73,4 @@ call conda activate FSM
 jupyter lab
 ENDLOCAL
 ```
-# to start statemachine open an anaconda prompt and run "go" 
+## to start statemachine open an anaconda prompt and run "go" 
