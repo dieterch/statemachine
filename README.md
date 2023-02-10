@@ -17,6 +17,9 @@ FSM App
 - Create Scripts Folder **mkdir %userprofile%\Documents\Scripts**
 - Change to Scripts Folder **cd %userprofile%\Documents\Scripts**
 
+- conda create --name FSM -y -k -c conda-forge --file statemachine.txt
+
+
 - conda create --name FSM -y
 - conda activate FSM
 - conda install -k python
@@ -27,7 +30,7 @@ FSM App
 - .. tqdm 
 - .. pandas 
 - .. matplotlib 
-- .. "bokeh==2.4" 
+- .. bokeh=2.4.* 
 - .. scipy 
 - .. jupyterlab 
 - .. ipywidgets 
@@ -70,7 +73,7 @@ python setup.py develop
 @echo ==============================================
 cd "%USERPROFILE%/Documents\Scripts\statemachine"
 SETLOCAL
-call conda activate FSM
+call %USERPROFILE%/miniconda3\condabin\conda.bat activate FSM
 jupyter lab
 ENDLOCAL
 ```
