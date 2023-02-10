@@ -174,6 +174,7 @@ class Tab():
                             formatter={
                                 'starter': "{:.1f}",
                                 'idle': "{:.1f}",
+                                'PressBoost_max': "{:.2f}",
                                 'ramprate':"{:.2f}",
                                 'runout': lambda x: f"{x:0.1f}"
                             }
@@ -190,6 +191,7 @@ class Tab():
                                 'starttime': "{:%Y-%m-%d %H:%M:%S %z}",
                                 'starter': "{:.1f}",
                                 'idle': "{:.1f}",
+                                'PressBoost_max': "{:.2f}",
                                 'ramprate':"{:.2f}",
                                 'runout': lambda x: f"{x:0.1f}"
                             }
