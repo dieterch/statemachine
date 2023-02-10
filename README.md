@@ -230,8 +230,8 @@ jupyter trust App.ipynb
 cd ..
 cd dmyplant4
 ## install the package in its place ...
-python setup.py develop --uninstall
-python setup.py develop
+- python setup.py develop --uninstall
+- python setup.py develop
 ## you might see several "package missing  errors, just keep installing until this commanf runs through
 
 - open jupyter lab
