@@ -229,7 +229,6 @@ zstd=1.5.2=h19a0ad4_0
 - jupyter trust App.ipynb
 - cd ..
 - cd dmyplant4
-- 
 ## install the package in its place ...
 - python setup.py develop --uninstall
 - python setup.py develop
