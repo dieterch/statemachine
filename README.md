@@ -41,6 +41,7 @@ pyarrow=8.0.0
 pytables=3.7.0
 python=3.10.9
 scipy=1.8.1
+tabulate=0.8.9
 tqdm=4.64.1
 voila=0.4.0
 ```
