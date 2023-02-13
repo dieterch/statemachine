@@ -216,6 +216,7 @@ sniffio=1.3.0=pyhd8ed1ab_0
 soupsieve=2.3.2.post1=pyhd8ed1ab_0
 sqlite=3.40.1=h2bbff1b_0
 stack_data=0.6.2=pyhd8ed1ab_0
+tabulate=0.8.10=py310haa95532_0
 tbb=2021.6.0=h59b6b97_1
 terminado=0.15.0=py310h5588dad_0
 tinycss2=1.2.1=pyhd8ed1ab_0
