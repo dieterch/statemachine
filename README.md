@@ -12,7 +12,7 @@ FSM App
 - Open 'Anaconda Prompt (miniconda3)'
 
 ## Update conda to the latest version
-- run conda update conda
+- conda update conda
 
 - Create Scripts Folder **mkdir %userprofile%\Documents\Scripts**
 - Change to Scripts Folder **cd %userprofile%\Documents\Scripts**
