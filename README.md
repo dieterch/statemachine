@@ -47,8 +47,9 @@ tqdm
 voila
 ```
 
-- conda create --name FSM -y -k -c conda-forge --file statemachine.txt
+- conda create --name FSM
 - conda activate FSM
+- conda install -y -k -c conda-forge --file statemachine.txt
 
 ## then download the following git's
 - git clone https://github.com/DieterChvatal/dmyplant4.git
