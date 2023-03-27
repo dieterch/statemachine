@@ -120,9 +120,9 @@ class Tab():
                     bokeh_show(fig3)
                     
                     dr2set2 = [
-                            #{'col':['targetload'],'ylim': [4100, 4700], 'color':'red', 'unit':'kW'},
+                            {'col':['targetload'],'ylim': [4100, 4700], 'color':'red', 'unit':'kW'},
                             {'col':['bmep2','bmep'],'ylim': [20, 30], 'color':['FireBrick','red'], 'unit':'bar'},
-                            #{'col':['TJ_GasDiffPressMin'],'ylim': [-20, 80], 'color':'blue', 'unit':'mbar'},
+                            {'col':['TJ_Lambda_min','TJ_Lambda_max'],'ylim': [0, 3], 'color':'rgba(255,165,0,0.4)', 'unit':'-'},
                             {'col':['TJ_Pos_at_Min'],'ylim': [0, 600], 'color':'purple', 'unit':'%'},
                             #{'col':['TJ_GasPress1_at_Min'],'ylim': [800, 1300], 'color':'dodgerblue', 'unit':'mbar'},
                             {'col':['TJ_GasTemp1_at_Min'],'ylim': [0, 100], 'color':'dodgerblue', 'unit':'°C'},
