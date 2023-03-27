@@ -86,6 +86,7 @@ class Tab():
                     {'col':['TJ_Pos_at_Min'],'ylim': [0, 100], 'color':'purple', 'unit':'°C'},
                     {'col':['TJ_GasPress1_at_Min'],'ylim': [700, 1200], 'color':'brown', 'unit':'mbar'},
                     {'col':['TJ_GasTemp1_at_Min'],'ylim': [0, 100], 'color':'dodgerblue', 'unit':'°C'},
+                    {'col':['TJ_Lambda_min','TJ_Lambda_max'],'ylim': [0, 3], 'color':'rgba(255,165,0,0.4)', 'unit':'-'},
                     {'col':['no'],'_ylim':(0,1000), 'color':['rgba(0,0,0,0.05)'] },
                     ]
                     dr2set2 = equal_adjust(dr2set2, rde, do_not_adjust=['no'], minfactor=0.95, maxfactor=1.2)
@@ -122,7 +123,7 @@ class Tab():
                     dr2set2 = [
                             {'col':['targetload'],'ylim': [4100, 4700], 'color':'red', 'unit':'kW'},
                             {'col':['bmep2','bmep'],'ylim': [20, 30], 'color':['FireBrick','red'], 'unit':'bar'},
-                            {'col':['TJ_Lambda_min','TJ_Lambda_max'],'ylim': [0, 3], 'color':'rgba(255,165,0,0.4)', 'unit':'-'},
+                            {'col':['TJ_Lambda_min','TJ_Lambda_max'],'ylim': [0, 4], 'color':'rgba(255,165,0,0.4)', 'unit':'-'},
                             {'col':['TJ_Pos_at_Min'],'ylim': [0, 600], 'color':'purple', 'unit':'%'},
                             #{'col':['TJ_GasPress1_at_Min'],'ylim': [800, 1300], 'color':'dodgerblue', 'unit':'mbar'},
                             {'col':['TJ_GasTemp1_at_Min'],'ylim': [0, 100], 'color':'dodgerblue', 'unit':'°C'},
