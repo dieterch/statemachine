@@ -144,3 +144,5 @@ dmypy.json
 .html
 Results/data/
 bokeh_examples/data/
+.salt
+
