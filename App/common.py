@@ -169,7 +169,7 @@ class V:
     selected = ''
     selected_number = ''
     modes_value = ['MAN','AUTO']
-    succ_value = ['undefined','success']
+    succ_value = ['undefined','success','failed']
     alarm_warning_value = ['-']
     query_list = []
 
