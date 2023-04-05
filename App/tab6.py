@@ -89,7 +89,11 @@ class Tab():
                     {'col':['TJ_Lambda_min','TJ_Lambda_max'],'ylim': [0, 3], 'color':'rgba(255,165,0,0.4)', 'unit':'-'},
                     {'col':['no'],'_ylim':(0,1000), 'color':['rgba(0,0,0,0.05)'] },
                     ]
-                    dr2set2 = equal_adjust(dr2set2, rde, do_not_adjust=['no'], minfactor=0.95, maxfactor=1.2)
+                    
+                    #Checken, ob run2 Resultate im den Daten vorhanden sind und dr2set2 entsprechend anpassen
+                    dr2set2_c = [r for r in dr2set2 if all(res in list(V.fsm.starts.columns) for res in r['col'])]
+ 
+                    dr2set2 = equal_adjust(dr2set2_c, rde, do_not_adjust=['no'], minfactor=0.95, maxfactor=1.2)
                     ftitle = f"{V.fsm._e}"
                     fig2 = dbokeh_chart(rde, dr2set2, style='both', figsize=self.dfigsize ,title=ftitle);
                     bokeh_show(fig2)
@@ -130,7 +134,9 @@ class Tab():
                             {'col':['no'],'_ylim':(0,1000), 'color':['rgba(0,0,0,0.05)'] },
                             ]
                     try:
-                        dr2set2 = equal_adjust(dr2set2, rde, do_not_adjust=['no'], minfactor=1.0, maxfactor=1.1)
+                        #Check, ob run2 Resultate im den Daten vorhanden sind und dr2set2 entsprechend anpassen
+                        dr2set2_c = [r for r in dr2set2 if all(res in list(V.fsm.starts.columns) for res in r['col'])]
+                        dr2set2 = equal_adjust(dr2set2_c, rde, do_not_adjust=['no'], minfactor=1.0, maxfactor=1.1)
                     except Exception as err:
                         print(f'Error: {str(err)}')
                         
