@@ -20,6 +20,24 @@ class Tab():
         self.dfigsize = V.dfigsize
         self.tab6_out = widgets.Output()
 
+        self.cb_loadcap = widgets.Checkbox(
+            value=True,
+            description='forget starts with power below',
+            disabled=False,
+            indent=False,
+            layout=widgets.Layout(max_width='220px')
+        )
+
+        self.t_loadcap = widgets.IntText(
+            #description='%:',
+            value=95,
+            layout=widgets.Layout(max_width='120px')
+        )
+
+        self.t_loadcaplabel = widgets.Label(
+            value="%"
+        )
+
         self.b_tecjet = widgets.Button(
             description='TecJet Results',
             disabled=False,
@@ -55,6 +73,7 @@ class Tab():
     @property
     def tab(self):
         return widgets.VBox([
+            widgets.HBox([self.cb_loadcap, self.t_loadcap, self.t_loadcaplabel]),
             widgets.HBox([self.b_tecjet,self.b_exhaust,self.b_sync,self.b_oil]),
             self.tab6_out],
             layout=widgets.Layout(min_height=V.hh))
@@ -99,7 +118,8 @@ class Tab():
                     bokeh_show(fig2)
 
                     
-                    rde = rde[rde['targetload'] > 0.95 * V.fsm._e['Power_PowerNominal']]
+                    if self.cb_loadcap.value:
+                        rde = rde[rde['targetload'] > self.t_loadcap.value / 100 * V.fsm._e['Power_PowerNominal']]
                     rde['bmep'] = rde.apply(lambda x: V.fsm._e._calc_BMEP(x['targetload'], V.fsm._e.Speed_nominal), axis=1)
                     rde['bmep2'] = rde.apply(lambda x: V.fsm._e._calc_BMEP(x['maxload'], V.fsm._e.Speed_nominal), axis=1)
                     dr2set2 = [
@@ -200,6 +220,8 @@ class Tab():
 
                     print()
                     ntitle = f"{V.fsm._e}" + ' | Exhaust Temperture at Start, Max, Min & Spread (@ Max Spread)'
+                    if self.cb_loadcap.value:
+                        rde = rde[rde['targetload'] > self.t_loadcap.value / 100 * V.fsm._e['Power_PowerNominal']]
                     dr2set4 = [
                             {'col':['ExTCylMax@SpreadMax','ExTCylMin@SpreadMax'],'_ylim': [4200, 4800], 'color':['FireBrick','Crimson'], 'unit':'°C'},
                             {'col':['ExTCylMax@SpreadMaxNo','ExTCylMin@SpreadMaxNo'],'_ylim': [1, 24], 'color':['Thistle','Plum'], 'unit':'-'},
@@ -258,6 +280,9 @@ class Tab():
                     fig4 = dbokeh_chart(rde, dr2set3, style='both', figsize=self.dfigsize ,title=ntitle);
                     bokeh_show(fig4)
 
+                    if self.cb_loadcap.value:
+                        rde = rde[rde['targetload'] > self.t_loadcap.value / 100 * V.fsm._e['Power_PowerNominal']]
+
                     dr2set3 = [
                         {'col':['rpm_dmax'],'_ylim': [4200, 4800], 'color':'red', 'unit':'rpm'},
                         {'col':['rpm_dmin'],'_ylim': [0, 100], 'color':'blue', 'unit':'rpm'},
@@ -314,6 +339,9 @@ class Tab():
                     ntitle = f"{V.fsm._e}" + ' | Oil Pressure Max, Oil Filter DP max & Oil Temp vs Starts'
                     fig4 = dbokeh_chart(rde, dr2set3, style='both', figsize=self.dfigsize ,title=ntitle);
                     bokeh_show(fig4)
+
+                    if self.cb_loadcap.value:
+                        rde = rde[rde['targetload'] > self.t_loadcap.value / 100 * V.fsm._e['Power_PowerNominal']]
 
                     dr2set3 = [
                         {'col':['PressOilMax'],'_ylim': [0, 20], 'color':'brown', 'unit':'bar'},
