@@ -32,7 +32,21 @@ class Tab():
                 disabled=False,
                 indent=False,
                 layout=widgets.Layout(width='100px'))
+        
+        self.run4_chkbox = widgets.Checkbox(
+                value=False,
+                description='FSM Run4',
+                disabled=False,
+                indent=False,
+                layout=widgets.Layout(width='100px'))
 
+        self.run4_refresh_chkbox = widgets.Checkbox(
+                value=False,
+                description='R4 Refresh',
+                disabled=False,
+                indent=False,
+                layout=widgets.Layout(width='100px'))
+        
         self.single_runs_chkbox = widgets.Checkbox(
                 value=False,
                 description='single Runs',
@@ -93,6 +107,13 @@ class Tab():
             layout=widgets.Layout(display='none'))
         self.b_runfsm2.on_click(self.fsm_run2)
 
+        self.b_runfsm4 = widgets.Button(
+            description='Run FSM4',
+            disabled=True, 
+            button_style='',
+            layout=widgets.Layout(display='none'))
+        self.b_runfsm4.on_click(self.fsm_run4)
+
         self.b_savefsm = widgets.Button(
             description='Save FSM',
             disabled=True, 
@@ -111,6 +132,8 @@ class Tab():
                 VBox([
                     self.run2_chkbox,
                     self.run2_refresh_chkbox,
+                    self.run4_chkbox,
+                    self.run4_refresh_chkbox,
                     self.single_runs_chkbox
                 ]),
                 VBox([
@@ -120,6 +143,7 @@ class Tab():
                     self.b_runfsm0,
                     self.b_runfsm1,
                     self.b_runfsm2,
+                    self.b_runfsm4,
                     self.b_savefsm,
                 ])
             ])
@@ -177,10 +201,12 @@ class Tab():
             self.b_runfsm0.layout.display = 'block'
             self.b_runfsm1.layout.display = 'block'
             self.b_runfsm2.layout.display = 'block'
+            self.b_runfsm4.layout.display = 'block'
         else:
             self.b_runfsm0.layout.display = 'none'
             self.b_runfsm1.layout.display = 'none'
             self.b_runfsm2.layout.display = 'none'
+            self.b_runfsm4.layout.display = 'none'
 
     #@tab2_out.capture(clear_output=True)
     def fsm_run(self,b):
@@ -195,6 +221,9 @@ class Tab():
                 #print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
                 if self.run2_chkbox.value:
                     V.fsm.run2(silent = False, p_refresh=self.run2_refresh_chkbox.value)
+                    #print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
+                if self.run4_chkbox.value:
+                    V.fsm.run4(silent = False, p_refresh=self.run4_refresh_chkbox.value)
                     #print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
                 V.rdf = V.fsm.starts
                 self.check_buttons()
@@ -256,7 +285,16 @@ class Tab():
                 V.rdf = V.fsm.starts
                 #print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
 
-                
+    def fsm_run4(self,b):
+        #motor = V.fleet.iloc[int(V.selected_number))]
+        with self.tab2_out:
+            #tab2_out.clear_output()
+            if V.fsm is not None:
+                V.fsm.run4(silent = False, debug=True, p_refresh=self.run4_refresh_chkbox.value)
+                self.check_buttons()
+                V.rdf = V.fsm.starts
+                #print(f"fsm Operator Memory Consumption: {get_size(V.fsm.__dict__)/(1024*1024):8.1f} MB")
+
     def fsm_save(self,b):
         if V.fsm is not None:
             filename = f'./data/{V.fsm._e["serialNumber"]}_{V.fsm._e["Validation Engine"]}.dfsm'
@@ -286,7 +324,15 @@ class Tab():
             self.b_resultsfsm.disabled = False            
             self.b_savefsm.disabled = False
         if ((V.fsm is not None) and all(e in V.fsm.runs_completed for e in [0,1,2])):
+            self.b_runfsm1.disabled = True
             self.b_runfsm2.disabled = True            
+            self.b_runfsm4.disabled = False            
+            self.b_resultsfsm.disabled = False            
+            self.b_savefsm.disabled = False
+        if ((V.fsm is not None) and all(e in V.fsm.runs_completed for e in [0,1,2])):
+            self.b_runfsm2.disabled = True            
+        if ((V.fsm is not None) and all(e in V.fsm.runs_completed for e in [0,1,2,4])):
+            self.b_runfsm4.disabled = True            
 
             
             
