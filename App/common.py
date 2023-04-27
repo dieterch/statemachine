@@ -26,7 +26,7 @@ def myfigures(e = None):
         return 5000
     func_power = fake_power if e is None else math.ceil(e['Power_PowerNominal'] / 1000.0) * 1000.0 * 1.2
     return {
-        'actors' : [
+        'actuators' : [
         {'col':['Power_SetPower','Power_PowerAct'], 'ylim':(0,func_power), 'color':['lightblue','red'], 'unit':'kW'},
         {'col':['Various_Values_SpeedAct'],'ylim': [0, 2500], 'color':'blue', 'unit':'rpm'},
         {'col':['Ignition_ITPAvg'],'ylim': [-10, 30], 'color':'rgba(255,0,255,0.4)', 'unit':'°KW'},
